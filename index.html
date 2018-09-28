@@ -9,12 +9,12 @@
         font-family: 'matchstick';
         src: url( 'digital-7.regular.ttf');
     }
-    .samples :hover {
-        cursor: pointer;
-    }
     li, input, td, tbody th {
-        font-family: 'matchstick',fantasy;
+        font-family: 'matchstick',monospace;
         font-size: xx-large;
+    }
+    li :hover {
+        cursor: pointer;
     }
     td {
         text-align: right;
@@ -24,10 +24,10 @@
 </head>
 <body onload="setup()">
 
-<h1>The essential match equation toolbox :) </h1>
+<h1>The essential matchstick equation toolbox :) </h1>
 
-<p>Click on any equation to analyze it. If the equation is incorrect, any solutions will be displayed.
-    If the equation is correct, possible problems (simple mutations) will be displayed.
+<p>Enter your puzzle in the input box, or click on any equation to analyze it. If the equation is incorrect, any solutions will be displayed.
+    If the equation is correct, possible puzzles (simple mutations) will be displayed.
 </p>
 
 <p>Note that 7 really only uses two matches. If you know of a more suitable font to use, please let me know!</p>
@@ -50,8 +50,6 @@
 </form>
 
 <div id="status"></div>
-
-
 
 <h2>Rules</h2>
 
