@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>MatchSolver</title>
+
+<style>
+    @font-face {
+        font-family: 'matchstick';
+        src: url( 'digital-7.regular.ttf');
+    }
+    .samples :hover {
+        cursor: pointer;
+    }
+    li, input, td, tbody th {
+        font-family: 'matchstick',fantasy;
+        font-size: xx-large;
+    }
+    td {
+        text-align: right;
+        letter-spacing: 0.5em;
+    }
+</style>
+</head>
+<body onload="setup()">
+
+<h1>The essential match equation toolbox :) </h1>
+
+<p>Click on any equation to analyze it. If the equation is incorrect, any solutions will be displayed.
+    If the equation is correct, possible problems (simple mutations) will be displayed.
+</p>
+
+<p>Note that 7 really only uses two matches. If you know of a more suitable font to use, please let me know!</p>
+
+<h2>Some sample problems: </h2>
+
+<ul class="samples">
+    <li>10+10=8</li>
+    <li>6-5=17</li>
+    <li>5+7=2</li>
+    <li>6+4=4</li>
+    <li>3+3=8</li>
+    <!--<li>3x3=8</li>-->
+</ul>
+
+
+
+<form>
+    <input id="equation" value="">
+</form>
+
+<div id="status"></div>
+
+
+
+<h2>Rules</h2>
+
+<p>
+Only one match may be moved. The table below list possible moves.
+</p>
+
+<table border="1">
+    <thead>
+    <tr>
+        <th>Character</th>
+        <th>Transforms to</th>
+        <th>Add match to get...</th>
+        <th>Remove match to get...</th>
+    </tr>
+    </thead>
+    <tbody>
+    </tbody>
+</table>
+
+
+
+<script src="match.js"></script>
+
+
+
+</body>
+</html>
