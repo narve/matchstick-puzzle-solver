@@ -12,7 +12,18 @@
     li, input, td, tbody th, .matchsticks {
         font-family: 'matchstick',monospace;
         font-size: xx-large;
+
+        /* Chrome problems:*/
+        height: 1em;
+        /*outline: 1px red solid;*/
     }
+    /* Chrome problems:*/
+    @media screen and (-webkit-min-device-pixel-ratio:0) {
+        input {
+            font-family: monospace;
+        }
+    }
+
     ul {
         list-style: none;
     }
@@ -31,13 +42,16 @@
 
 
 <p>
-    Made by <a href="https://github.com/narve">Narve</a>. Comments and feedback welcome.
+    Made by <a href="https://github.com/narve">Narve</a>. Comments and feedback welcome on the Github <a href="https://github.com/narve/matchstick-puzzle-solver">project page</a>.
 </p>
 
 <p>Enter your puzzle in the input box, or click on any equation to analyze it. If the equation is incorrect, any solutions will be displayed.
     If the equation is correct, possible puzzles (simple mutations) will be displayed.
 </p>
 
+<p>
+    Only tested in newest Chrome and Firefox. Chrome has some font issues so the input box isn't as nice as in Firefox :)
+</p>
 <p>Note that <span class="matchsticks">7</span> really only uses two matches, and that <span class="matchsticks">*</span> means multiply. If you know of a more suitable font to use, please let me know!</p>
 
 <h2>Some sample problems: </h2>
