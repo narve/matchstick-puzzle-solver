@@ -9,11 +9,14 @@
         font-family: 'matchstick';
         src: url( 'digital-7.regular.ttf');
     }
-    li, input, td, tbody th {
+    li, input, td, tbody th, .matchsticks {
         font-family: 'matchstick',monospace;
         font-size: xx-large;
     }
-    li :hover {
+    ul {
+        list-style: none;
+    }
+    li:hover {
         cursor: pointer;
     }
     td {
@@ -26,21 +29,20 @@
 
 <h1>The essential matchstick equation toolbox :) </h1>
 
+
+<p>
+    Made by <a href="https://github.com/narve">Narve</a>. Comments and feedback welcome.
+</p>
+
 <p>Enter your puzzle in the input box, or click on any equation to analyze it. If the equation is incorrect, any solutions will be displayed.
     If the equation is correct, possible puzzles (simple mutations) will be displayed.
 </p>
 
-<p>Note that 7 really only uses two matches. If you know of a more suitable font to use, please let me know!</p>
+<p>Note that <span class="matchsticks">7</span> really only uses two matches, and that <span class="matchsticks">*</span> means multiply. If you know of a more suitable font to use, please let me know!</p>
 
 <h2>Some sample problems: </h2>
 
-<ul class="samples">
-    <li>10+10=8</li>
-    <li>6-5=17</li>
-    <li>5+7=2</li>
-    <li>6+4=4</li>
-    <li>3+3=8</li>
-    <!--<li>3x3=8</li>-->
+<ul id="samples">
 </ul>
 
 

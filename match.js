@@ -1,11 +1,10 @@
-
 // *********** RULES ****
 
-// const legals = "0123456789+-x/= ".split("");
-const legals = "0123456789+-= ".split("");
+const legals = "0123456789+-*/= ".split("");
+// const legals = "1234567890+-= ".split("");
 
-const adds  = {};
-const subs  = {};
+const adds = {};
+const subs = {};
 const trans = {};
 
 function add(c1, c2) {
@@ -13,31 +12,31 @@ function add(c1, c2) {
     subs[c2].add(c1);
 }
 
-function transform(c1,c2) {
+function transform(c1, c2) {
     trans[c1].add(c2);
     trans[c2].add(c1);
 }
 
 function makeRules() {
-    legals.forEach( c => adds[c] = new Set() );
-    legals.forEach( c => subs[c] = new Set() );
-    legals.forEach( c => trans[c] = new Set() );
-    add( '-', '+');
-    add( '-', '=');
+    legals.forEach( c => [adds, subs, trans].forEach( s => s[c] = new Set()));
+    add('-', '+');
+    add('-', '=');
     add('1', '7');
     add('5', '6');
     add('0', '8');
     add('6', '8');
-    add('5','9');
+    add('5', '9');
     transform('3', '5');
     transform('3', '2');
     transform('5', '9');
+
+    add(' ', '1');
 }
 
 function evaluate(arr) {
+    if (arr.indexOf('=') <= -1) return false;
     try {
-        if( arr.indexOf( '=') <= -1 ) return false;
-        return !!eval(arr.join("").replace('=', '=='));
+        return !!eval(" " + arr.join("").replace('=', '==').replace('x', '*') + " ");
     } catch (x) {
         return false;
     }
@@ -48,43 +47,64 @@ function evaluate(arr) {
 
 
 function mutate(arr) {
-    return transforms(arr).concat(moves(arr));
+    return transforms([' ', ...arr, ' ']).concat(moves(arr));
 }
 
-function replace( arr, index, re) {
+function replace(arr, index, re) {
     const res = [...arr];
     res[index] = re;
     return res;
 }
 
 function transforms(arr) {
-    const res = [];
-    for(let i = 0; i < arr.length; i++ ) {
-        const c = arr[i];
-        trans[c].forEach( t => res.push( replace(arr, i, t)));
-    }
-    return res;
+    return arr.flatMap((c, i) => [...trans[c]].map(re => replace(arr, i, re)));
 }
 
 function moves(arr) {
-    const res = [];
-    for(let i = 0; i < arr.length; i++ ) {
-        const c = arr[i];
-        subs[c].forEach( re => res.push( ... adding( replace(arr, i, re ), i)));
-    }
-    return res;
+    return arr.flatMap((c, i) => [...subs[c]].flatMap(re => adding(replace(arr, i, re), i)));
 }
 
 function adding(arr, except) {
-    const res = [];
-    for( let i = 0; i < arr.length; i++ ) {
-        if( i === except ) continue;
-        const c = arr[i];
-        adds[c].forEach( re => res.push( replace(arr, i, re)));
-    }
-    return res;
+    return arr.flatMap((c, i) => i === except ? [] : [...adds[c]].map(re => replace(arr, i, re)));
 }
 
+
+// *********** Tests ****
+
+
+function assert( exp, expSolutions, expOther ) {
+    const mutations = mutate(exp.split(""));
+    const solutions = mutations.filter(evaluate);
+    const other = mutations.filter(e => !evaluate(e));
+    if( solutions.length !== expSolutions) {
+        throw new Error( `exp=${exp}, expSolutions= ${expSolutions}, got ${solutions.length}`)
+    }
+    if( other.length !== expOther) {
+        // throw new Error( `exp=${exp}, expOther= ${expOther}, got ${other.length}`)
+    }
+}
+
+const testData = [
+    ['10+10=8', 1, 15],
+    ['6-5=17', 1, 18],
+    ['5+7=2', 1, 8 ],
+    ['6+4=4', 1, 1] ,
+    ['3+3=8', 2, 2] ,
+    ['4-1=5', 1, 6 ],
+    ['5+3=6', 2, 10],
+    ['6-2=7', 1, 8],
+    ['7+1=0', 1, 5 ],
+
+    ['1111=11 ', 2, 5 ],
+
+    ['1*3=5', 2, 5 ],
+    ['5/3=1', 2, 5 ],
+    ['7*5/3=2', 1, 5 ],
+];
+
+function runTests() {
+    testData.forEach( data => assert( ...data ));
+}
 
 
 
@@ -100,7 +120,7 @@ function element(tag, txt, subs = []) {
 
 
 function toLink(txt) {
-    const li = document.createElement( 'li');
+    const li = document.createElement('li');
     li.innerHTML = txt;
     makeLink(li);
     return li;
@@ -112,56 +132,57 @@ function makeLink(element) {
 }
 
 function putSample(txt) {
-    console.log( "putting sample: ", txt);
     document.querySelector("#equation").value = txt;
-    solve();
+    solve(txt);
 }
 
-function solve() {
-    const t = document.querySelector("#equation").value;
+function solve(t) {
+    console.log( 'Solving: ', t);
 
+    const isOK = evaluate(t.split(""));
     const mutations = mutate(t.split(""));
     const solutions = mutations.filter(arr => evaluate(arr))
-        .map( m => m.join(""))
-        .map( toLink );
+        .map(m => m.join(""))
+        .map(toLink);
     const other = mutations.filter(arr => !evaluate(arr))
-        .map( m => m.join(""))
-        .map( toLink );
+        .map(m => m.join(""))
+        .map(toLink);
 
     const statusElement = document.querySelector("#status");
     statusElement.innerHTML = '';
 
-    // statusElement.appendChild(element('p', `Equation: ${t} evaluates to ${evaluate(t.split(""))}`));
 
-    const isOK = evaluate(t.split(""));
-
-    if( !isOK && solutions.length > 0) {
+    if (!isOK && solutions.length > 0) {
         statusElement.appendChild(element('p', `${solutions.length} solution(s): `));
-        statusElement.appendChild( element( 'ul', "", solutions));
+        statusElement.appendChild(element('ul', "", solutions));
     }
 
-    statusElement.appendChild(element('p', `${other.length} ${isOK ? 'Possible quiz tasks: ' : 'Other incorrect mutations: '}`));
-    statusElement.appendChild( element( 'ul', "", other));
+    statusElement.appendChild(element('p', `${other.length} ${isOK ? 'Possible quiz tasks: ' : 'Incorrect mutations: '}`));
+    statusElement.appendChild(element('ul', "", other));
 }
 
 function setup() {
 
     makeRules();
+    runTests();
 
-    document.querySelector("#equation").addEventListener('input', () => solve());
-    document.querySelector(".samples").childNodes.forEach( e => makeLink(e));
 
-    const span = set => element( 'span', [...set].join(""));
+    // Set up gui stuff:
+    document.querySelector("#equation").addEventListener('input', e => solve(e.srcElement.value));
+    const samples = document.querySelector("#samples");
+    testData.forEach( data => samples.appendChild(toLink(data[0])));
+    putSample(testData[0][0]);
 
-    for( let i = 0; i < legals.length; i++ ) {
+
+    // Make rules table:
+    const span = set => element('span', [...set].join(""));
+    const tbody = document.querySelector('tbody');
+    for (let i = 0; i < legals.length; i++) {
         const c = legals[i];
-        const o = element( 'th', c );
-        const t = element( 'td',"", [span(trans[c])] );
-        const a = element( 'td',"", [span(adds[c])] );
-        const s = element( 'td',"", [span(subs[c])] );
-        document.querySelector('tbody').appendChild( element( 'tr', "", [o, t, a, s]));
+        const o = element('th', c);
+        const t = element('td', "", [span(trans[c])]);
+        const a = element('td', "", [span(adds[c])]);
+        const s = element('td', "", [span(subs[c])]);
+        tbody.appendChild(element('tr', "", [o, t, a, s]));
     }
-
-    document.querySelector("#equation").value = document.querySelector(".samples").firstElementChild.innerHTML;
-    solve();
 }
