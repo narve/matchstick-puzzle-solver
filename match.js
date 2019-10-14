@@ -24,7 +24,6 @@ function makeRules() {
     add('0', '8');
     add('1', '7');
     add('3', '9');
-    // add('4', '5');
     add('4', '9');
     add('5', '9');
     add('5', '6');
@@ -34,7 +33,6 @@ function makeRules() {
 
     transform('3', '5');
     transform('3', '2');
-    transform('5', '9');
     transform('6', '9');
 
     add(' ', '1');
@@ -165,7 +163,9 @@ function solve(t) {
 
 
     if (!isOK && solutions.length > 0) {
-        statusElement.appendChild(element('p', `${solutions.length} solution(s): `));
+        const q = element('span', t);
+        q.classList.add("matchsticks");
+        statusElement.appendChild(element('p', `There are ${solutions.length} solution(s) to `, [q]));
         statusElement.appendChild(element('ul', "", solutions));
     }
 
