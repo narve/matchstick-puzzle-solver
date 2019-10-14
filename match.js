@@ -21,14 +21,21 @@ function makeRules() {
     legals.forEach( c => [adds, subs, trans].forEach( s => s[c] = new Set()));
     add('-', '+');
     add('-', '=');
-    add('1', '7');
-    add('5', '6');
     add('0', '8');
-    add('6', '8');
+    add('1', '7');
+    add('3', '9');
+    // add('4', '5');
+    add('4', '9');
     add('5', '9');
+    add('5', '6');
+    add('6', '8');
+    add('6', '9');
+    add('9', '8');
+
     transform('3', '5');
     transform('3', '2');
     transform('5', '9');
+    transform('6', '9');
 
     add(' ', '1');
 }
@@ -69,6 +76,8 @@ function adding(arr, except) {
 }
 
 
+//
+
 // *********** Tests ****
 
 
@@ -77,7 +86,9 @@ function assert( exp, expSolutions, expOther ) {
     const solutions = mutations.filter(evaluate);
     const other = mutations.filter(e => !evaluate(e));
     if( solutions.length !== expSolutions) {
-        throw new Error( `exp=${exp}, expSolutions= ${expSolutions}, got ${solutions.length}`)
+        // throw new Error( `exp=${exp}, expSolutions= ${expSolutions}, got ${solutions.length}`)
+        const sol = solutions.map(s => s.join('')).join(';');
+        console.error( new Error( `exp=${exp}, expSolutions= ${expSolutions}, got ${solutions.length}: ${sol}`));
     }
     if( other.length !== expOther) {
         // throw new Error( `exp=${exp}, expOther= ${expOther}, got ${other.length}`)
@@ -85,14 +96,15 @@ function assert( exp, expSolutions, expOther ) {
 }
 
 const testData = [
+    ['8+3-4=0', 2, 15],
     ['10+10=8', 1, 15],
     ['6-5=17', 1, 18],
     ['5+7=2', 1, 8 ],
-    ['6+4=4', 1, 1] ,
+    ['6+4=4', 2, 1] ,
     ['3+3=8', 2, 2] ,
     ['4-1=5', 1, 6 ],
     ['5+3=6', 2, 10],
-    ['6-2=7', 1, 8],
+    ['6-2=7', 2, 8],
     ['7+1=0', 1, 5 ],
 
     ['1111=11 ', 2, 5 ],
