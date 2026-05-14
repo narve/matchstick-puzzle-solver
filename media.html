@@ -83,21 +83,9 @@
     <tbody id="rules-body"></tbody>
   </table>
 
-  <script>
-    // ── Rules (mirrors match.js logic) ──────────────────────────────────────
-    const legals = "0123456789+-*/= ".split("");
-    const adds = {}, subs = {}, trans = {};
-    legals.forEach(c => [adds, subs, trans].forEach(s => s[c] = new Set()));
-
-    function addRule(a, b) { adds[a].add(b); subs[b].add(a); }
-    function tfRule(a, b)  { trans[a].add(b); trans[b].add(a); }
-
-    addRule('-', '+'); addRule('-', '='); addRule('0', '8');
-    addRule('1', '7'); addRule('3', '9');
-    addRule('5', '9'); addRule('5', '6'); addRule('6', '8');
-    addRule('9', '8'); addRule('/', '*');
-    tfRule('3', '5'); tfRule('3', '2'); tfRule('6', '9');
-    tfRule('0', '6'); tfRule('0', '9');
+  <script type="module">
+    import { legals, adds, subs, trans, makeRules } from './match.js';
+    makeRules();
 
     // ── SVG segment rendering ───────────────────────────────────────────────
     const VB_X = 2, VB_Y = -7.5, VB_W = 48, VB_H = 124; // viewBox of each character SVG (offset to center content)
