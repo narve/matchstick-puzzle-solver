@@ -23,16 +23,17 @@ export function makeRules() {
     add('0', '8');
     add('1', '7');
     add('3', '9');
-    add('4', '9');
     add('5', '9');
     add('5', '6');
     add('6', '8');
-    add('6', '9');
     add('9', '8');
+    add('/', '*');
 
     transform('3', '5');
     transform('3', '2');
     transform('6', '9');
+    transform('0', '6');
+    transform('0', '9');
 
     add(' ', '1');
 }
