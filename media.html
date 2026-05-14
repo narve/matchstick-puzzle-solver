@@ -18,9 +18,9 @@
       filter: drop-shadow(1px 2px 2px rgba(0, 0, 0, 0.45));
     }
     table { border-collapse: collapse; margin-top: 1em; }
-    th, td { border: 1px solid #c8b89a; padding: 3px; text-align: center; vertical-align: middle; }
-    thead th { background: #f0e8d8; }
-    .char-cell { display: flex; flex-wrap: wrap; gap: 4px; justify-content: center; align-items: center; min-height: 103px; }
+    th, td { border: 1px solid #c8b89a; padding: 1px; text-align: center; vertical-align: middle; }
+    thead th { background: #f0e8d8; padding: 4px 8px; }
+    .char-cell { display: flex; flex-wrap: wrap; gap: 2px; justify-content: center; align-items: center; }
   </style>
 </head>
 <body>
@@ -166,10 +166,15 @@
 
     // ── Build showcase row ──────────────────────────────────────────────────
     document.getElementById('char-showcase').innerHTML =
-      legals.filter(c => c !== ' ').map(c => charSvg(c, 96, 248)).join('');
+      legals.filter(c => c !== ' ').map(c =>
+        charSvg(c, 96, 248) + (c === '7' ? '<div style="flex-basis:100%;height:0"></div>' : '')
+      ).join('');
 
     // ── Build table ─────────────────────────────────────────────────────────
-    const CW = 40, CH = 103; // character cell display size
+    // Compute character display size from viewBox dimensions and a scale factor
+    const CHAR_SCALE = 1.1; // pixels per viewBox unit
+    const CW = Math.round(VB_W * CHAR_SCALE);
+    const CH = Math.round(VB_H * CHAR_SCALE);
 
     const tbody = document.getElementById('rules-body');
     for (const c of legals) {

@@ -1,0 +1,28 @@
+{
+  "mcpServers": {
+    "playwright": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@playwright/mcp@latest", "--browser", "chromium"],
+      "env": {}
+    },
+    "playwright-firefox": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@playwright/mcp@latest", "--browser", "firefox"],
+      "env": {}
+    },
+    "playwright-webkit": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@playwright/mcp@latest", "--browser", "webkit"],
+      "env": {}
+    },
+    "playwright-edge": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@playwright/mcp@latest", "--browser", "msedge", "--executable-path", "/opt/microsoft/msedge/msedge"],
+      "env": {}
+    }
+  }
+}
