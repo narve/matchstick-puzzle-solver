@@ -1,10 +1,10 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 
-import { makeRules, evaluate, mutate } from "../match.js";
+import { getRuleSets } from "../match.js";
 import { samples } from "../samples.js";
 
-makeRules();
+const { evaluate, mutate } = getRuleSets().find(r => r.name === "default");
 
 function solve(equation) {
   const mutations = mutate(equation.split(""));

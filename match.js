@@ -1,122 +1,87 @@
 // *********** RULES ****
 
-export const legals = "0123456789+-*/= ".split("");
+function createRuleSet(name, defineFn) {
+    const legals = "0123456789+-*/= ".split("");
+    const adds = {};
+    const subs = {};
+    const trans = {};
 
-export const adds = {};
-export const subs = {};
-export const trans = {};
+    legals.forEach(c => [adds, subs, trans].forEach(s => s[c] = new Set()));
 
-function add(c1, c2) {
-    adds[c1].add(c2);
-    subs[c2].add(c1);
-}
-
-function transform(c1, c2) {
-    trans[c1].add(c2);
-    trans[c2].add(c1);
-}
-
-export function makeRules() {
-    legals.forEach( c => [adds, subs, trans].forEach( s => s[c] = new Set()));
-    add('-', '+');
-    add('-', '=');
-    add('0', '8');
-    add('1', '7');
-    add('3', '9');
-    add('5', '9');
-    add('5', '6');
-    add('6', '8');
-    add('9', '8');
-    add('/', '*');
-
-    transform('3', '5');
-    transform('3', '2');
-    transform('6', '9');
-    transform('0', '6');
-    transform('0', '9');
-
-    add(' ', '1');
-}
-
-export function evaluate(arr) {
-    if (arr.indexOf('=') <= -1) return false;
-    try {
-        return !!eval(" " + arr.join("").replace('=', '==').replace('x', '*') + " ");
-    } catch (x) {
-        return false;
+    function add(c1, c2) {
+        adds[c1].add(c2);
+        subs[c2].add(c1);
     }
-}
 
-
-// *********** SOLVING ****
-
-
-export function mutate(arr) {
-    return transforms([' ', ...arr, ' ']).concat(moves(arr));
-}
-
-function replace(arr, index, re) {
-    const res = [...arr];
-    res[index] = re;
-    return res;
-}
-
-function transforms(arr) {
-    return arr.flatMap((c, i) => [...trans[c]].map(re => replace(arr, i, re)));
-}
-
-function moves(arr) {
-    return arr.flatMap((c, i) => [...subs[c]].flatMap(re => adding(replace(arr, i, re), i)));
-}
-
-function adding(arr, except) {
-    return arr.flatMap((c, i) => i === except ? [] : [...adds[c]].map(re => replace(arr, i, re)));
-}
-
-
-//
-
-// *********** Tests ****
-
-
-function assert( exp, expSolutions, expOther ) {
-    const mutations = mutate(exp.split(""));
-    const solutions = mutations.filter(evaluate);
-    const other = mutations.filter(e => !evaluate(e));
-    if( solutions.length !== expSolutions) {
-        // throw new Error( `exp=${exp}, expSolutions= ${expSolutions}, got ${solutions.length}`)
-        const sol = solutions.map(s => s.join('')).join(';');
-        console.error( new Error( `exp=${exp}, expSolutions= ${expSolutions}, got ${solutions.length}: ${sol}`));
+    function transform(c1, c2) {
+        trans[c1].add(c2);
+        trans[c2].add(c1);
     }
-    if( other.length !== expOther) {
-        // throw new Error( `exp=${exp}, expOther= ${expOther}, got ${other.length}`)
+
+    defineFn(add, transform);
+
+    function evaluate(arr) {
+        if (arr.indexOf('=') <= -1) return false;
+        try {
+            return !!eval(" " + arr.join("").replace('=', '==').replace('x', '*') + " ");
+        } catch (x) {
+            return false;
+        }
     }
+
+    function replace(arr, index, re) {
+        const res = [...arr];
+        res[index] = re;
+        return res;
+    }
+
+    function transforms(arr) {
+        return arr.flatMap((c, i) => [...trans[c]].map(re => replace(arr, i, re)));
+    }
+
+    function moves(arr) {
+        return arr.flatMap((c, i) => [...subs[c]].flatMap(re => adding(replace(arr, i, re), i)));
+    }
+
+    function adding(arr, except) {
+        return arr.flatMap((c, i) => i === except ? [] : [...adds[c]].map(re => replace(arr, i, re)));
+    }
+
+    function mutate(arr) {
+        return transforms([' ', ...arr, ' ']).concat(moves(arr));
+    }
+
+    return { name, legals, adds, subs, trans, evaluate, mutate };
 }
 
-const testData = [
-    ['8+3-4=0', 2, 15],
-    ['10+10=8', 1, 15],
-    ['6-5=17', 1, 18],
-    ['5+7=2', 1, 8 ],
-    ['6+4=4', 2, 1] ,
-    ['3+3=8', 2, 2] ,
-    ['4-1=5', 1, 6 ],
-    ['5+3=6', 2, 10],
-    ['6-2=7', 2, 8],
-    ['7+1=0', 1, 5 ],
+export function getRuleSets() {
+    return [
+        createRuleSet("default", (add, transform) => {
+            add('-', '+');
+            add('-', '=');
+            add('0', '8');
+            add('1', '7');
+            add('3', '9');
+            add('5', '9');
+            add('5', '6');
+            add('6', '8');
+            add('9', '8');
+            add('/', '*');
 
-    ['1111=11 ', 2, 5 ],
+            transform('3', '5');
+            transform('3', '2');
+            transform('6', '9');
+            transform('0', '6');
+            transform('0', '9');
 
-    ['1*3=5', 2, 5 ],
-    ['5/3=1', 2, 5 ],
-    ['7*5/3=2', 1, 5 ],
-];
-
-function runTests() {
-    testData.forEach( data => assert( ...data ));
+            add(' ', '1');
+        }),
+    ];
 }
 
-
+// Legacy API removed — use getRuleSets() and find by name instead
+const _default = getRuleSets().find(r => r.name === "default");
+const { legals, adds, subs, trans, evaluate, mutate } = _default;
 
 // *********** UI ****
 
@@ -173,17 +138,24 @@ function solve(t) {
     statusElement.appendChild(element('ul', "", other));
 }
 
+import { samples as samplePuzzles } from './samples.js';
+
 export function setup() {
-
-    makeRules();
-    runTests();
-
 
     // Set up gui stuff:
     document.querySelector("#equation").addEventListener('input', e => solve(e.srcElement.value));
-    const samples = document.querySelector("#samples");
-    testData.forEach( data => samples.appendChild(toLink(data[0])));
-    putSample(testData[0][0]);
+    const samplesEl = document.querySelector("#samples");
+    for (const difficulty of ["easy", "medium", "hard"]) {
+        const group = samplePuzzles.filter(s => s.difficulty === difficulty);
+        if (group.length === 0) continue;
+        const heading = element('li', '');
+        heading.innerHTML = `<strong>${difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}</strong>`;
+        samplesEl.appendChild(heading);
+        const ul = document.createElement('ul');
+        group.forEach(s => ul.appendChild(toLink(s.puzzle)));
+        samplesEl.appendChild(ul);
+    }
+    putSample(samplePuzzles[0].puzzle);
 
 
     // Make rules table:

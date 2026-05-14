@@ -84,8 +84,8 @@
   </table>
 
   <script type="module">
-    import { legals, adds, subs, trans, makeRules } from './match.js';
-    makeRules();
+    import { getRuleSets } from './match.js';
+    const { legals, adds, subs, trans } = getRuleSets().find(r => r.name === "default");
 
     // ── SVG segment rendering ───────────────────────────────────────────────
     const VB_X = 2, VB_Y = -7.5, VB_W = 48, VB_H = 124; // viewBox of each character SVG (offset to center content)
