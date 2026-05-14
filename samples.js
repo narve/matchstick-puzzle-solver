@@ -2,7 +2,7 @@
 // Each entry: { puzzle, solutions, difficulty }
 // Rules follow media.html definitions.
 
-const samples = [
+export const samples = [
   // ── Easy: short expressions, straightforward moves ────────────────────
   {
     puzzle: "6+4=4",

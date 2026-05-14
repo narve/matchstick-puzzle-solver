@@ -1,11 +1,10 @@
 // *********** RULES ****
 
-const legals = "0123456789+-*/= ".split("");
-// const legals = "1234567890+-= ".split("");
+export const legals = "0123456789+-*/= ".split("");
 
-const adds = {};
-const subs = {};
-const trans = {};
+export const adds = {};
+export const subs = {};
+export const trans = {};
 
 function add(c1, c2) {
     adds[c1].add(c2);
@@ -17,7 +16,7 @@ function transform(c1, c2) {
     trans[c2].add(c1);
 }
 
-function makeRules() {
+export function makeRules() {
     legals.forEach( c => [adds, subs, trans].forEach( s => s[c] = new Set()));
     add('-', '+');
     add('-', '=');
@@ -38,7 +37,7 @@ function makeRules() {
     add(' ', '1');
 }
 
-function evaluate(arr) {
+export function evaluate(arr) {
     if (arr.indexOf('=') <= -1) return false;
     try {
         return !!eval(" " + arr.join("").replace('=', '==').replace('x', '*') + " ");
@@ -51,7 +50,7 @@ function evaluate(arr) {
 // *********** SOLVING ****
 
 
-function mutate(arr) {
+export function mutate(arr) {
     return transforms([' ', ...arr, ' ']).concat(moves(arr));
 }
 
@@ -173,7 +172,7 @@ function solve(t) {
     statusElement.appendChild(element('ul', "", other));
 }
 
-function setup() {
+export function setup() {
 
     makeRules();
     runTests();

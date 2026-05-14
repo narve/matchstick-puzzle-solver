@@ -1,0 +1,11 @@
+{
+  "name": "matchstick-puzzle-solver",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Matchstick equation puzzle solver",
+  "scripts": {
+    "test": "node --test 'test/**/*.spec.js'"
+  },
+  "devDependencies": {}
+}
