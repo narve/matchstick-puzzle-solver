@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <title>Matchstick</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <style>
     body {
       font-family: Georgia, serif;
@@ -17,9 +18,9 @@
       filter: drop-shadow(1px 2px 2px rgba(0, 0, 0, 0.45));
     }
     table { border-collapse: collapse; margin-top: 1em; }
-    th, td { border: 1px solid #c8b89a; padding: 0.4em 0.8em; text-align: center; vertical-align: middle; }
+    th, td { border: 1px solid #c8b89a; padding: 3px; text-align: center; vertical-align: middle; }
     thead th { background: #f0e8d8; }
-    .char-cell { display: flex; flex-wrap: wrap; gap: 4px; justify-content: center; align-items: center; min-height: 62px; }
+    .char-cell { display: flex; flex-wrap: wrap; gap: 4px; justify-content: center; align-items: center; min-height: 103px; }
   </style>
 </head>
 <body>
@@ -62,24 +63,10 @@
     </symbol>
   </svg>
 
-  <p>Light up the night with
-    <svg class="matchstick" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 200" width="12" height="40">
-      <use href="#matchstick"/>
-    </svg>
-    a single match.
-  </p>
-  <p>Strike it and watch the flame dance.</p>
+  <h2>The character set</h2>
+  <p>Every digit and operator, built from matchsticks:</p>
 
-  <svg class="matchstick" xmlns="http://www.w3.org/2000/svg" width="60" height="200">
-    <use href="#matchstick"/>
-  </svg>
-
-  <h2>The number 8</h2>
-  <p>Seven matchsticks, seven segments:</p>
-
-  <svg class="matchstick" viewBox="0 0 48 124" width="96" height="248">
-    <use href="#c-8"/>
-  </svg>
+  <div id="char-showcase" class="char-cell"></div>
 
   <h2>Character mutations</h2>
   <p>What each character can become when one matchstick is moved, added, or removed.</p>
@@ -113,7 +100,7 @@
     tfRule('0', '6'); tfRule('0', '9');
 
     // ── SVG segment rendering ───────────────────────────────────────────────
-    const VB_W = 48, VB_H = 124; // viewBox of each character SVG
+    const VB_X = 2, VB_Y = -7.5, VB_W = 48, VB_H = 124; // viewBox of each character SVG (offset to center content)
 
     const USE = '<use href="#matchstick" width="60" height="200"/>';
 
@@ -124,7 +111,7 @@
       return `<g transform="translate(${x},${y}) scale(0.2)">${USE}</g>`;
     }
     function diagSeg(cx, cy, angle) {
-      return `<g transform="translate(${cx},${cy}) rotate(${angle}) translate(-6,-20) scale(0.2)">${USE}</g>`;
+      return `<g transform="translate(${cx},${cy}) rotate(${angle}) translate(-6,-21) scale(0.2)">${USE}</g>`;
     }
 
     // Segment position table: [renderer, x, y]
@@ -142,18 +129,20 @@
       '0':[0,1,2,4,5,6], '1':[2,5],      '2':[0,2,3,4,6],
       '3':[0,2,3,5,6],   '4':[1,2,3,5],  '5':[0,1,3,5,6],
       '6':[0,1,3,4,5,6], '7':[0,2,5],    '8':[0,1,2,3,4,5,6],
-      '9':[0,1,2,3,5,6], '-':[3],        '=':[3,6],  ' ':[],
+      '9':[0,1,2,3,5,6], '-':[3],        ' ':[],
     };
 
     function charInner(c) {
       if (CHAR_SEGS[c] !== undefined)
         return CHAR_SEGS[c].map(i => SEG[i][0](SEG[i][1], SEG[i][2])).join('');
       if (c === '+')
-        return hSeg(3, 62) + vSeg(18, 41);
+        return hSeg(4, 56) + vSeg(21.5, 35);
+      if (c === '=')
+        return hSeg(4, 48) + hSeg(4, 64);
       if (c === '/')
-        return diagSeg(24, 62, 45);
+        return diagSeg(27.5, 56, 45);
       if (c === '*')
-        return diagSeg(24, 62, -45) + diagSeg(24, 62, 45);
+        return diagSeg(27.5, 56, -45) + diagSeg(27.5, 56, 45);
       return '';
     }
 
@@ -166,17 +155,21 @@
 
     document.getElementById('char-defs').insertAdjacentHTML('beforeend',
       legals.map(c =>
-        `<symbol id="${idFor(c)}" viewBox="0 0 ${VB_W} ${VB_H}">${charInner(c)}</symbol>`
+        `<symbol id="${idFor(c)}" viewBox="${VB_X} ${VB_Y} ${VB_W} ${VB_H}">${charInner(c)}</symbol>`
       ).join('')
     );
 
     function charSvg(c, w, h) {
-      return `<svg viewBox="0 0 ${VB_W} ${VB_H}" width="${w}" height="${h}" `
+      return `<svg viewBox="${VB_X} ${VB_Y} ${VB_W} ${VB_H}" width="${w}" height="${h}" `
            + `style="vertical-align:middle"><use href="#${idFor(c)}"/></svg>`;
     }
 
+    // ── Build showcase row ──────────────────────────────────────────────────
+    document.getElementById('char-showcase').innerHTML =
+      legals.filter(c => c !== ' ').map(c => charSvg(c, 96, 248)).join('');
+
     // ── Build table ─────────────────────────────────────────────────────────
-    const CW = 24, CH = 62; // character cell display size
+    const CW = 40, CH = 103; // character cell display size
 
     const tbody = document.getElementById('rules-body');
     for (const c of legals) {
