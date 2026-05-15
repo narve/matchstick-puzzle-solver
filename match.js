@@ -123,9 +123,15 @@ function solve(t) {
         .map(m => m.join(""))
         .map(toLink);
 
+    const validity = document.querySelector("#validity");
+    if (validity) {
+        validity.textContent = isOK ? '✓' : '✗';
+        validity.style.color = isOK ? '#2e7d32' : '#c62828';
+        validity.title = isOK ? 'Equation is correct' : 'Equation is incorrect';
+    }
+
     const statusElement = document.querySelector("#status");
     statusElement.innerHTML = '';
-
 
     if (!isOK && solutions.length > 0) {
         const q = element('span', t);
@@ -134,8 +140,10 @@ function solve(t) {
         statusElement.appendChild(element('ul', "", solutions));
     }
 
-    statusElement.appendChild(element('p', `${other.length} ${isOK ? 'Possible quiz tasks: ' : 'Incorrect mutations: '}`));
-    statusElement.appendChild(element('ul', "", other));
+    if (isOK) {
+        statusElement.appendChild(element('p', `${other.length} possible quiz tasks: `));
+        statusElement.appendChild(element('ul', "", other));
+    }
 }
 
 import { samples as samplePuzzles } from './samples.js';
