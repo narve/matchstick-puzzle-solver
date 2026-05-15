@@ -31,14 +31,18 @@ jobs:
           npm run test:all 2>&1 | tee tests.log
           STATUS=$?
 
-          # node --test summary (printed by the spec reporter)
-          UNIT_TOTAL=$(grep -oP '^ℹ tests \K\d+'  tests.log | head -1)
-          UNIT_PASS=$( grep -oP '^ℹ pass \K\d+'   tests.log | head -1)
-          UNIT_FAIL=$( grep -oP '^ℹ fail \K\d+'   tests.log | head -1)
+          # Strip ANSI escape codes so terminal-colored lines parse cleanly
+          sed -E 's/\x1b\[[0-9;]*[A-Za-z]//g' tests.log > tests.clean
 
-          # Playwright list reporter summary (e.g. "  17 passed (8.5s)")
-          E2E_PASS=$(grep -oP '^\s*\K\d+(?= passed)' tests.log | tail -1)
-          E2E_FAIL=$(grep -oP '^\s*\K\d+(?= failed)' tests.log | tail -1)
+          # node --test spec-reporter summary: lines like "ℹ tests 68".
+          # Match on field structure to be robust to the leading symbol.
+          UNIT_TOTAL=$(awk 'NF>=2 && $(NF-1)=="tests" && $NF ~ /^[0-9]+$/ {print $NF; exit}' tests.clean)
+          UNIT_PASS=$( awk 'NF>=2 && $(NF-1)=="pass"  && $NF ~ /^[0-9]+$/ {print $NF; exit}' tests.clean)
+          UNIT_FAIL=$( awk 'NF>=2 && $(NF-1)=="fail"  && $NF ~ /^[0-9]+$/ {print $NF; exit}' tests.clean)
+
+          # Playwright list reporter: "  17 passed (8.5s)" / "  2 failed"
+          E2E_PASS=$(awk '{for(i=2;i<=NF;i++) if($i=="passed" && $(i-1) ~ /^[0-9]+$/) print $(i-1)}' tests.clean | tail -1)
+          E2E_FAIL=$(awk '{for(i=2;i<=NF;i++) if($i=="failed" && $(i-1) ~ /^[0-9]+$/) print $(i-1)}' tests.clean | tail -1)
 
           # GH outputs
           {

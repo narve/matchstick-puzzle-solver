@@ -5,6 +5,9 @@ test.describe('matchstick puzzle solver', () => {
     // Each test gets a fresh BrowserContext (so localStorage is empty)
     // and lands on the home page with the default ruleset selected.
     await page.goto('/index.html');
+    // setup() runs in a deferred module script — wait until it has
+    // populated the samples list before any test interacts with the UI.
+    await page.locator('#samples li[data-equation]').first().waitFor();
   });
 
   test('page loads with the three ruleset radios in order strict / default / flexible', async ({ page }) => {
