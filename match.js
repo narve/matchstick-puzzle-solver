@@ -73,8 +73,6 @@ export function getRuleSets() {
             transform('6', '9');
             transform('0', '6');
             transform('0', '9');
-
-            add(' ', '1');
         }),
     ];
 }
