@@ -231,7 +231,7 @@ function solve(t) {
     statusElement.innerHTML = '';
 
     if (!isOK && solutions.length > 0) {
-        statusElement.appendChild(element('p', `There are ${solutions.length} solution(s):`));
+        statusElement.appendChild(element('p', `Found ${solutions.length} solution${solutions.length === 1 ? '' : 's'}:`));
         statusElement.appendChild(element('ul', "", solutions));
     } else if (!isOK) {
         statusElement.appendChild(element('p', 'No solutions found 😢'));

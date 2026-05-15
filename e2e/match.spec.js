@@ -44,7 +44,7 @@ test.describe('matchstick puzzle solver', () => {
     await input.fill('6+4=4');
 
     await expect(page.locator('#validity')).toHaveText('✗');
-    await expect(page.locator('#status p').first()).toContainText('2 solution(s)');
+    await expect(page.locator('#status p').first()).toContainText('Found 2 solutions');
     // Solutions list contains the two canonical fixes
     const sols = page.locator('#status li[data-equation]');
     await expect(sols).toHaveCount(2);
