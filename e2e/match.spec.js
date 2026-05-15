@@ -184,14 +184,21 @@ test.describe('matchstick puzzle solver', () => {
     });
   });
 
-  test('rules table shows alt-form rows under flexible', async ({ page }) => {
+  test('rules table shows alt forms inside action cells (not as their own rows)', async ({ page }) => {
     await page.locator('input[value="flexible"]').check();
-    // Each row's character cell has one SVG use; collect every char's id
-    const charIds = await page.locator('tbody > tr > th use').evaluateAll(
+    // No row in the leftmost column should be an alt-form character.
+    const subjectIds = await page.locator('tbody > tr > th use').evaluateAll(
       els => els.map(e => e.getAttribute('href'))
     );
-    for (const id of ['#c-b', '#c-q', '#c-M', '#c-P', '#c-E']) {
-      expect(charIds).toContain(id);
+    for (const altId of ['#c-b', '#c-q', '#c-M', '#c-P', '#c-E']) {
+      expect(subjectIds).not.toContain(altId);
+    }
+    // But the alt forms must still appear as RESULTS in the action columns.
+    const cellIds = await page.locator('tbody > tr > td use').evaluateAll(
+      els => els.map(e => e.getAttribute('href'))
+    );
+    for (const altId of ['#c-b', '#c-q', '#c-M', '#c-P', '#c-E']) {
+      expect(cellIds).toContain(altId);
     }
   });
 });

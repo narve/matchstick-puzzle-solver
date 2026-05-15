@@ -307,6 +307,10 @@ function renderRulesTable() {
         return td;
     };
     for (const c of active.legals) {
+        // Hide alt-form rows (b, q, M, P, E …): every rule involving them
+        // is also expressed in the canonical row (e.g. trans['5'] already
+        // contains 'b', so the 'b' row would just duplicate that info).
+        if (c in ALT_TO_CANONICAL) continue;
         // Hide the space pseudo-row when no rules involve it (e.g. strict
         // disables the boundary rule). It's not a typeable character, so
         // showing it with three blank cells is pure clutter.
