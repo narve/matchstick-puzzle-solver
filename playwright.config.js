@@ -5,7 +5,11 @@ import { defineConfig, devices } from '@playwright/test';
 export default defineConfig({
   testDir: './e2e',
   fullyParallel: true,
-  reporter: 'list',
+  // Locally: list reporter only. In CI: also produce an HTML report so
+  // the workflow can upload it as an artifact.
+  reporter: process.env.CI
+    ? [['list'], ['html', { open: 'never', outputFolder: 'playwright-report' }]]
+    : 'list',
   use: {
     baseURL: 'http://localhost:8766',
     trace: 'retain-on-failure',

@@ -10,8 +10,87 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
         with:
-          node-version: 20
-      - run: npm test
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Microsoft Edge for Playwright
+        run: npx playwright install --with-deps msedge
+
+      - name: Run all tests (unit + e2e)
+        id: tests
+        run: |
+          set -o pipefail
+          set +e
+          npm run test:all 2>&1 | tee tests.log
+          STATUS=$?
+
+          # node --test summary (printed by the spec reporter)
+          UNIT_TOTAL=$(grep -oP '^ℹ tests \K\d+'  tests.log | head -1)
+          UNIT_PASS=$( grep -oP '^ℹ pass \K\d+'   tests.log | head -1)
+          UNIT_FAIL=$( grep -oP '^ℹ fail \K\d+'   tests.log | head -1)
+
+          # Playwright list reporter summary (e.g. "  17 passed (8.5s)")
+          E2E_PASS=$(grep -oP '^\s*\K\d+(?= passed)' tests.log | tail -1)
+          E2E_FAIL=$(grep -oP '^\s*\K\d+(?= failed)' tests.log | tail -1)
+
+          # GH outputs
+          {
+            echo "unit_total=${UNIT_TOTAL:-0}"
+            echo "unit_pass=${UNIT_PASS:-0}"
+            echo "unit_fail=${UNIT_FAIL:-0}"
+            echo "e2e_pass=${E2E_PASS:-0}"
+            echo "e2e_fail=${E2E_FAIL:-0}"
+          } >> "$GITHUB_OUTPUT"
+
+          # Inline workflow annotations
+          if [ -n "$UNIT_TOTAL" ]; then
+            if [ "${UNIT_FAIL:-0}" -gt 0 ]; then
+              echo "::error::Unit tests: $UNIT_FAIL of $UNIT_TOTAL failed"
+            else
+              echo "::notice::Unit tests: $UNIT_PASS / $UNIT_TOTAL passed"
+            fi
+          fi
+          if [ -n "$E2E_PASS$E2E_FAIL" ]; then
+            if [ "${E2E_FAIL:-0}" -gt 0 ]; then
+              echo "::error::E2E tests: $E2E_FAIL failed (Playwright/MS Edge)"
+            else
+              echo "::notice::E2E tests: ${E2E_PASS:-0} passed (Playwright/MS Edge)"
+            fi
+          fi
+
+          exit $STATUS
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
+
+      - name: Job summary
+        if: always()
+        run: |
+          U_TOTAL='${{ steps.tests.outputs.unit_total }}'
+          U_PASS='${{ steps.tests.outputs.unit_pass }}'
+          U_FAIL='${{ steps.tests.outputs.unit_fail }}'
+          E_PASS='${{ steps.tests.outputs.e2e_pass }}'
+          E_FAIL='${{ steps.tests.outputs.e2e_fail }}'
+          {
+            echo "## Test results"
+            echo ""
+            echo "| Suite                           | Total | Passed | Failed |"
+            echo "|---------------------------------|------:|-------:|-------:|"
+            echo "| Unit (node --test)              | $U_TOTAL | $U_PASS | $U_FAIL |"
+            echo "| E2E (Playwright on MS Edge)     | $((${E_PASS:-0} + ${E_FAIL:-0})) | ${E_PASS:-0} | ${E_FAIL:-0} |"
+            echo ""
+            echo "Combined via \`npm run test:all\`."
+            echo "Playwright HTML report is attached as the \`playwright-report\` artifact."
+          } >> "$GITHUB_STEP_SUMMARY"
