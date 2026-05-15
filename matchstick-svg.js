@@ -38,7 +38,7 @@ function charInner(c) {
   if (c === '+') return hSeg(4, 56) + vSeg(21.5, 35);
   if (c === '=') return hSeg(4, 48) + hSeg(4, 64);
   if (c === '/') return diagSeg(27.5, 56, 45);
-  if (c === '*') return diagSeg(27.5, 56, -45) + diagSeg(27.5, 56, 45);
+  if (c === '*') return diagSeg(27.5, 56, 45) + diagSeg(27.5, 56, -45);
   return '';
 }
 
