@@ -5,7 +5,8 @@
   "type": "module",
   "description": "Matchstick equation puzzle solver",
   "scripts": {
-    "test": "node --test 'test/**/*.spec.js'"
+    "test": "node --test test/*.spec.js",
+    "watch": "npx -y live-server --port=8765 --no-browser ."
   },
   "devDependencies": {}
 }

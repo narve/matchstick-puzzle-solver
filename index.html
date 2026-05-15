@@ -6,38 +6,46 @@
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
 
 <style>
-    @font-face {
-        font-family: 'matchstick';
-        src: url( 'digital-7.regular.ttf');
+    body {
+        background: #faf7f0;
+        color: #3a2e1a;
+        max-width: 50em;
+        margin: 0 auto;
+        padding: 2em;
     }
-    li, input, td, tbody th, .matchsticks {
-        font-family: 'matchstick',monospace;
-        font-size: xx-large;
-
-        /* Chrome problems:*/
-        height: 1em;
-        /*outline: 1px red solid;*/
+    input#equation {
+        font-family: monospace;
+        font-size: 1.5em;
+        padding: 0.2em 0.4em;
     }
-    /* Chrome problems:*/
-    @media screen and (-webkit-min-device-pixel-ratio:0) {
-        input {
-            font-family: monospace;
-        }
+    ul { list-style: none; padding-left: 1em; }
+    li[data-equation] { cursor: pointer; width: fit-content; padding: 0 0.2em; border-radius: 4px; }
+    li[data-equation]:hover { background: #f0e8d8; }
+    table { border-collapse: collapse; margin-top: 0.5em; }
+    th, td { border: 1px solid #c8b89a; padding: 0; text-align: center; vertical-align: middle; }
+    tbody th, tbody td { line-height: 0; }
+    thead th { background: #f0e8d8; padding: 4px 8px; line-height: normal; }
+    .char-cell { display: flex; flex-wrap: wrap; gap: 0; justify-content: center; align-items: center; }
+    .empty-slot {
+      font-family: sans-serif; font-size: 0.8em; color: #7a6a4a;
+      padding: 0.15em 0.5em; line-height: normal;
+      border: 1px dashed #b8a778; border-radius: 4px;
+      background: #f5ecd6;
     }
-
-    ul {
-        list-style: none;
+    tbody svg { max-width: 100%; height: auto; }
+    @media (max-width: 600px) {
+      tbody svg { width: auto; height: 44px; }
     }
-    li:hover {
-        cursor: pointer;
-    }
-    td {
-        text-align: right;
-        letter-spacing: 0.5em;
+    #preview { margin: 0.6em 0 1em; min-height: 80px; }
+    #validity {
+        font-family: sans-serif;
+        font-size: 1.2em;
+        margin-left: 0.5em;
+        opacity: 0.7;
     }
 </style>
 </head>
-<body onload="setup()">
+<body>
 
 <h1>The essential matchstick equation toolbox :) </h1>
 
@@ -50,37 +58,34 @@
     If the equation is correct, possible puzzles (simple mutations) will be displayed.
 </p>
 
-<p>
-    Only tested in newest Chrome and Firefox. Chrome has some font issues so the input box isn't as nice as in Firefox :)
-</p>
-<p>Note that <span class="matchsticks">7</span> really only uses two matches, and that <span class="matchsticks">*</span> means multiply. If you know of a more suitable font to use, please let me know!</p>
+<form>
+    <input id="equation" value=""><span id="validity"></span>
+</form>
 
-<h2>Some sample problems: </h2>
+<div id="preview"></div>
+
+<div id="status"></div>
+
+<h2>Some sample problems:</h2>
+
+<p>Confused? Have a look at the <a href="#rules">Rules</a> section below to see which moves are legal.</p>
 
 <ul id="samples">
 </ul>
 
-
-
-<form>
-    <input id="equation" value="">
-</form>
-
-<div id="status"></div>
-
-<h2>Rules</h2>
+<h2 id="rules">Rules</h2>
 
 <p>
-Only one match may be moved. The table below list possible moves.
+Only one match may be moved. The table below lists possible moves.
 </p>
 
-<table border="1">
+<table>
     <thead>
     <tr>
         <th>Character</th>
-        <th>Transforms to</th>
-        <th>Add match to get...</th>
-        <th>Remove match to get...</th>
+        <th>Move</th>
+        <th>Add</th>
+        <th>Remove</th>
     </tr>
     </thead>
     <tbody>

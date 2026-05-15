@@ -36,6 +36,11 @@ export const samples = [
     solutions: ["1*5=5", "1*3=3"],
     difficulty: "medium",
   },
+  {
+    puzzle: "1+2=7",
+    solutions: ["-1+2=1"],
+    difficulty: "medium",
+  },
 
   // ── Hard: multi-digit numbers, longer expressions ─────────────────────
   {
@@ -51,6 +56,11 @@ export const samples = [
   {
     puzzle: "50-18=38",
     solutions: ["56-18=38"],
+    difficulty: "hard",
+  },
+  {
+    puzzle: "1+2+3+4+5=6+7+8+9",
+    solutions: ["1+2+3+4+6=6-7+8+9", "1+2+3+4+5=6-7+8+8"],
     difficulty: "hard",
   },
 ];

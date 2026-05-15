@@ -48,7 +48,8 @@ function createRuleSet(name, defineFn) {
     }
 
     function mutate(arr) {
-        return transforms([' ', ...arr, ' ']).concat(moves(arr));
+        const padded = [' ', ...arr, ' '];
+        return transforms(padded).concat(moves(padded));
     }
 
     return { name, legals, adds, subs, trans, evaluate, mutate };
@@ -74,7 +75,9 @@ export function getRuleSets() {
             transform('0', '6');
             transform('0', '9');
 
-            add(' ', '1');
+            // A '-' is one matchstick; adding it to an empty cell (the
+            // implicit space on either side of the puzzle) materialises it.
+            add(' ', '-');
         }),
     ];
 }
@@ -85,6 +88,12 @@ const { legals, adds, subs, trans, evaluate, mutate } = _default;
 
 // *********** UI ****
 
+import { samples as samplePuzzles } from './samples.js';
+import { injectDefs, charSvg, equationSvg } from './matchstick-svg.js';
+
+const LIST_H = 40;     // height for list items / inline equation previews
+const PREVIEW_H = 80;  // height for the live input preview
+const TABLE_H = 72;    // height for rules-table characters
 
 function element(tag, txt, subs = []) {
     const e = document.createElement(tag);
@@ -93,17 +102,13 @@ function element(tag, txt, subs = []) {
     return e;
 }
 
-
 function toLink(txt) {
+    txt = txt.trim();
     const li = document.createElement('li');
-    li.innerHTML = txt;
-    makeLink(li);
+    li.dataset.equation = txt;
+    li.innerHTML = equationSvg(txt, LIST_H);
+    li.addEventListener('click', e => putSample(e.currentTarget.dataset.equation));
     return li;
-}
-
-
-function makeLink(element) {
-    element.addEventListener('click', e => putSample(e.srcElement.innerHTML));
 }
 
 function putSample(txt) {
@@ -112,8 +117,6 @@ function putSample(txt) {
 }
 
 function solve(t) {
-    console.log( 'Solving: ', t);
-
     const isOK = evaluate(t.split(""));
     const mutations = mutate(t.split(""));
     const solutions = mutations.filter(arr => evaluate(arr))
@@ -123,26 +126,35 @@ function solve(t) {
         .map(m => m.join(""))
         .map(toLink);
 
+    const preview = document.querySelector("#preview");
+    if (preview) preview.innerHTML = equationSvg(t, PREVIEW_H);
+
+    const validity = document.querySelector("#validity");
+    if (validity) {
+        validity.textContent = isOK ? '✓' : '✗';
+        validity.style.color = isOK ? '#2e7d32' : '#c62828';
+        validity.title = isOK ? 'Equation is correct' : 'Equation is incorrect';
+    }
+
     const statusElement = document.querySelector("#status");
     statusElement.innerHTML = '';
 
-
     if (!isOK && solutions.length > 0) {
-        const q = element('span', t);
-        q.classList.add("matchsticks");
-        statusElement.appendChild(element('p', `There are ${solutions.length} solution(s) to `, [q]));
+        statusElement.appendChild(element('p', `There are ${solutions.length} solution(s):`));
         statusElement.appendChild(element('ul', "", solutions));
+    } else if (!isOK) {
+        statusElement.appendChild(element('p', 'No solutions found 😢'));
     }
 
-    statusElement.appendChild(element('p', `${other.length} ${isOK ? 'Possible quiz tasks: ' : 'Incorrect mutations: '}`));
-    statusElement.appendChild(element('ul', "", other));
+    if (isOK) {
+        statusElement.appendChild(element('p', `${other.length} possible quiz tasks: `));
+        statusElement.appendChild(element('ul', "", other));
+    }
 }
 
-import { samples as samplePuzzles } from './samples.js';
-
 export function setup() {
+    injectDefs(document.body);
 
-    // Set up gui stuff:
     document.querySelector("#equation").addEventListener('input', e => solve(e.srcElement.value));
     const samplesEl = document.querySelector("#samples");
     for (const difficulty of ["easy", "medium", "hard"]) {
@@ -157,16 +169,26 @@ export function setup() {
     }
     putSample(samplePuzzles[0].puzzle);
 
-
     // Make rules table:
-    const span = set => element('span', [...set].join(""));
+    const renderChar = ch =>
+        ch === ' ' ? '<span class="empty-slot">(empty)</span>' : charSvg(ch, TABLE_H, TABLE_H);
+    const cell = set => {
+        const td = document.createElement('td');
+        const div = document.createElement('div');
+        div.className = 'char-cell';
+        div.innerHTML = [...set].map(renderChar).join('');
+        td.appendChild(div);
+        return td;
+    };
     const tbody = document.querySelector('tbody');
-    for (let i = 0; i < legals.length; i++) {
-        const c = legals[i];
-        const o = element('th', c);
-        const t = element('td', "", [span(trans[c])]);
-        const a = element('td', "", [span(adds[c])]);
-        const s = element('td', "", [span(subs[c])]);
-        tbody.appendChild(element('tr', "", [o, t, a, s]));
+    for (const c of legals) {
+        const th = document.createElement('th');
+        th.innerHTML = renderChar(c);
+        const tr = document.createElement('tr');
+        tr.appendChild(th);
+        tr.appendChild(cell(trans[c]));
+        tr.appendChild(cell(adds[c]));
+        tr.appendChild(cell(subs[c]));
+        tbody.appendChild(tr);
     }
 }
