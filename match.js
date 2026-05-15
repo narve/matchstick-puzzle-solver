@@ -1,6 +1,62 @@
 // *********** RULES ****
 
-function createRuleSet(name, defineFn) {
+/**
+ * A ruleset defines how matchstick characters can be mutated and how an
+ * equation is judged to be true.
+ *
+ * @typedef {Object} Ruleset
+ * @property {string} name         Stable identifier, e.g. "default".
+ * @property {string} description  Human-readable description shown in the UI.
+ * @property {string[]} legals     Characters that this ruleset operates over.
+ * @property {Record<string, Set<string>>} adds   c → chars producible by ADDING a match.
+ * @property {Record<string, Set<string>>} subs   c → chars producible by REMOVING a match.
+ * @property {Record<string, Set<string>>} trans  c → chars producible by MOVING one of c's matches (same count).
+ * @property {(arr: string[]) => boolean} evaluate Whether the expression is mathematically true under this ruleset's strictness.
+ * @property {(arr: string[]) => string[][]} mutate All single-match mutations (transforms + moves).
+ */
+
+function defaultEvaluate(arr) {
+    if (arr.indexOf('=') <= -1) return false;
+    try {
+        return !!eval(" " + arr.join("").replace('=', '==').replace('x', '*') + " ");
+    } catch (x) {
+        return false;
+    }
+}
+
+function strictEvaluate(arr) {
+    const s = arr.join("").trim();
+    if (/^[+\-*/=]/.test(s) || /[+\-*/=]$/.test(s)) return false;
+    return defaultEvaluate(arr);
+}
+
+/**
+ * The shared backbone of mutation rules used by every consumer-grade ruleset.
+ * Does NOT include the boundary `add(' ', '-')` rule — opt in per ruleset.
+ */
+function defineDefaultMutations(add, transform) {
+    add('-', '+');
+    add('-', '=');
+    add('0', '8');
+    add('1', '7');
+    add('3', '9');
+    add('5', '9');
+    add('5', '6');
+    add('6', '8');
+    add('9', '8');
+    add('/', '*');
+
+    transform('3', '5');
+    transform('3', '2');
+    transform('6', '9');
+    transform('0', '6');
+    transform('0', '9');
+}
+
+/**
+ * @returns {Ruleset}
+ */
+function createRuleSet(name, description, defineFn, evaluateFn = defaultEvaluate) {
     const legals = "0123456789+-*/= ".split("");
     const adds = {};
     const subs = {};
@@ -19,15 +75,6 @@ function createRuleSet(name, defineFn) {
     }
 
     defineFn(add, transform);
-
-    function evaluate(arr) {
-        if (arr.indexOf('=') <= -1) return false;
-        try {
-            return !!eval(" " + arr.join("").replace('=', '==').replace('x', '*') + " ");
-        } catch (x) {
-            return false;
-        }
-    }
 
     function replace(arr, index, re) {
         const res = [...arr];
@@ -52,39 +99,37 @@ function createRuleSet(name, defineFn) {
         return transforms(padded).concat(moves(padded));
     }
 
-    return { name, legals, adds, subs, trans, evaluate, mutate };
+    return { name, description, legals, adds, subs, trans, evaluate: evaluateFn, mutate };
 }
 
+/** @returns {Ruleset[]} */
 export function getRuleSets() {
     return [
-        createRuleSet("default", (add, transform) => {
-            add('-', '+');
-            add('-', '=');
-            add('0', '8');
-            add('1', '7');
-            add('3', '9');
-            add('5', '9');
-            add('5', '6');
-            add('6', '8');
-            add('9', '8');
-            add('/', '*');
-
-            transform('3', '5');
-            transform('3', '2');
-            transform('6', '9');
-            transform('0', '6');
-            transform('0', '9');
-
-            // A '-' is one matchstick; adding it to an empty cell (the
-            // implicit space on either side of the puzzle) materialises it.
-            add(' ', '-');
-        }),
+        createRuleSet(
+            "default",
+            "Lenient JS-style evaluator. A match dropped into the empty space on either side of the puzzle counts as a '-', so equations like -1+2=1 are legal solutions.",
+            (add, transform) => {
+                defineDefaultMutations(add, transform);
+                // A '-' is one matchstick; adding it to an empty cell (the
+                // implicit space on either side of the puzzle) materialises it.
+                add(' ', '-');
+            },
+        ),
+        createRuleSet(
+            "strict",
+            "Classic matchstick rules. A match cannot appear from nowhere, and expressions starting or ending with an operator are rejected.",
+            defineDefaultMutations,
+            strictEvaluate,
+        ),
     ];
 }
 
-// Legacy API removed — use getRuleSets() and find by name instead
-const _default = getRuleSets().find(r => r.name === "default");
-const { legals, adds, subs, trans, evaluate, mutate } = _default;
+/** @param {string} name @returns {Ruleset} */
+export function getRuleSet(name) {
+    const rs = getRuleSets().find(r => r.name === name);
+    if (!rs) throw new Error(`Unknown ruleset: ${name}`);
+    return rs;
+}
 
 // *********** UI ****
 
@@ -94,6 +139,9 @@ import { injectDefs, charSvg, equationSvg } from './matchstick-svg.js';
 const LIST_H = 40;     // height for list items / inline equation previews
 const PREVIEW_H = 80;  // height for the live input preview
 const TABLE_H = 72;    // height for rules-table characters
+
+/** @type {Ruleset} */
+let active = getRuleSet("default");
 
 function element(tag, txt, subs = []) {
     const e = document.createElement(tag);
@@ -117,12 +165,12 @@ function putSample(txt) {
 }
 
 function solve(t) {
-    const isOK = evaluate(t.split(""));
-    const mutations = mutate(t.split(""));
-    const solutions = mutations.filter(arr => evaluate(arr))
+    const isOK = active.evaluate(t.split(""));
+    const mutations = active.mutate(t.split(""));
+    const solutions = mutations.filter(arr => active.evaluate(arr))
         .map(m => m.join(""))
         .map(toLink);
-    const other = mutations.filter(arr => !evaluate(arr))
+    const other = mutations.filter(arr => !active.evaluate(arr))
         .map(m => m.join(""))
         .map(toLink);
 
@@ -152,13 +200,12 @@ function solve(t) {
     }
 }
 
-export function setup() {
-    injectDefs(document.body);
-
-    document.querySelector("#equation").addEventListener('input', e => solve(e.srcElement.value));
+function renderSamples() {
     const samplesEl = document.querySelector("#samples");
+    samplesEl.innerHTML = '';
+    const visible = samplePuzzles.filter(s => isSampleVisible(s, active.name));
     for (const difficulty of ["easy", "medium", "hard"]) {
-        const group = samplePuzzles.filter(s => s.difficulty === difficulty);
+        const group = visible.filter(s => s.difficulty === difficulty);
         if (group.length === 0) continue;
         const heading = element('li', '');
         heading.innerHTML = `<strong>${difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}</strong>`;
@@ -167,9 +214,22 @@ export function setup() {
         group.forEach(s => ul.appendChild(toLink(s.puzzle)));
         samplesEl.appendChild(ul);
     }
-    putSample(samplePuzzles[0].puzzle);
+    return visible;
+}
 
-    // Make rules table:
+function isSampleVisible(sample, rulesetName) {
+    // A sample tagged with a ruleset shows whenever the active ruleset is at
+    // least as permissive. "strict" is the most restrictive; any sample
+    // workable under strict is also workable under more permissive rulesets.
+    const tag = sample.ruleset ?? "strict";
+    if (rulesetName === "default") return tag === "strict" || tag === "default";
+    if (rulesetName === "strict") return tag === "strict";
+    return tag === rulesetName;
+}
+
+function renderRulesTable() {
+    const tbody = document.querySelector('tbody');
+    tbody.innerHTML = '';
     const renderChar = ch =>
         ch === ' ' ? '<span class="empty-slot">(empty)</span>' : charSvg(ch, TABLE_H, TABLE_H);
     const cell = set => {
@@ -180,15 +240,46 @@ export function setup() {
         td.appendChild(div);
         return td;
     };
-    const tbody = document.querySelector('tbody');
-    for (const c of legals) {
+    for (const c of active.legals) {
         const th = document.createElement('th');
         th.innerHTML = renderChar(c);
         const tr = document.createElement('tr');
         tr.appendChild(th);
-        tr.appendChild(cell(trans[c]));
-        tr.appendChild(cell(adds[c]));
-        tr.appendChild(cell(subs[c]));
+        tr.appendChild(cell(active.trans[c]));
+        tr.appendChild(cell(active.adds[c]));
+        tr.appendChild(cell(active.subs[c]));
         tbody.appendChild(tr);
     }
+}
+
+function setActiveRuleset(name) {
+    active = getRuleSet(name);
+    localStorage.setItem('ruleset', name);
+    const desc = document.querySelector('#ruleset-description');
+    if (desc) desc.textContent = active.description;
+    renderSamples();
+    renderRulesTable();
+    solve(document.querySelector("#equation").value);
+}
+
+export function setup() {
+    injectDefs(document.body);
+
+    const saved = localStorage.getItem('ruleset');
+    const initial = getRuleSets().some(r => r.name === saved) ? saved : "default";
+    active = getRuleSet(initial);
+
+    const radios = document.querySelectorAll('input[name="ruleset"]');
+    radios.forEach(r => {
+        r.checked = (r.value === initial);
+        r.addEventListener('change', e => { if (e.target.checked) setActiveRuleset(e.target.value); });
+    });
+    const desc = document.querySelector('#ruleset-description');
+    if (desc) desc.textContent = active.description;
+
+    document.querySelector("#equation").addEventListener('input', e => solve(e.srcElement.value));
+
+    const visible = renderSamples();
+    renderRulesTable();
+    putSample((visible[0] ?? samplePuzzles[0]).puzzle);
 }
