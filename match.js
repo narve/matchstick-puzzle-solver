@@ -20,16 +20,17 @@
  * evaluation, input normalisation, and any other place where the math
  * matters but the rendering doesn't.
  */
-export const ALT_TO_CANONICAL = { b: '6', q: '9' };
+export const ALT_TO_CANONICAL = { b: '6', q: '9', M: '-', P: '+', E: '=' };
 
 function canonicalise(arr) {
     return arr.map(c => ALT_TO_CANONICAL[c] ?? c).join('');
 }
 
 function defaultEvaluate(arr) {
-    if (arr.indexOf('=') <= -1) return false;
+    const canonical = canonicalise(arr);
+    if (canonical.indexOf('=') <= -1) return false;
     try {
-        return !!eval(" " + canonicalise(arr).replace('=', '==').replace('x', '*') + " ");
+        return !!eval(" " + canonical.replace('=', '==').replace('x', '*') + " ");
     } catch (x) {
         return false;
     }
@@ -42,12 +43,13 @@ function strictEvaluate(arr) {
 }
 
 /**
- * The shared backbone of mutation rules used by every consumer-grade ruleset.
- * Does NOT include the boundary `add(' ', '-')` rule — opt in per ruleset.
+ * Mutation rules shared by every ruleset. Excludes:
+ *   - the boundary `add(' ', '-')` rule (default/flexible opt in)
+ *   - `add('-', '=')` so that flexible can substitute alt-form operator
+ *     rules without first cancelling the canonical one
  */
-function defineDefaultMutations(add, transform) {
+function defineCoreMutations(add, transform) {
     add('-', '+');
-    add('-', '=');
     add('0', '8');
     add('1', '7');
     add('3', '9');
@@ -62,6 +64,11 @@ function defineDefaultMutations(add, transform) {
     transform('6', '9');
     transform('0', '6');
     transform('0', '9');
+}
+
+function defineDefaultMutations(add, transform) {
+    defineCoreMutations(add, transform);
+    add('-', '=');  // canonical '-' + stick → canonical '='
 }
 
 /**
@@ -134,17 +141,25 @@ export function getRuleSets() {
         ),
         createRuleSet(
             "flexible",
-            "Adds alternate forms of 6 and 9 drawn with 5 sticks instead of 6, so a single stick can be moved between '5' and the alt shapes.",
+            "Adds alt-form digits (b, q for 5-stick 6 and 9) and alt-form operators (M, P, E). When a stick moves between operators, the result renders in a non-canonical position to make the move visible.",
             (add, transform) => {
-                defineDefaultMutations(add, transform);
-                add(' ', '-');                  // inherit default's boundary rule
+                defineCoreMutations(add, transform);
+                add(' ', '-');                  // boundary rule (stick lands at canonical y)
+
+                // Digit alts
                 transform('5', 'b');            // 5 ↔ alt-6
                 transform('5', 'q');            // 5 ↔ alt-9
                 add('b', '6');                  // alt-6 + top stick = canonical 6
                 add('q', '9');                  // alt-9 + bottom stick = canonical 9
+
+                // Operator alts (replaces the canonical add('-', '='))
+                add('M', '=');                  // alt-minus + stick → canonical equals
+                add('-', 'E');                  // canonical minus + stick → alt equals
+                transform('+', 'E');            // + ↔ alt equals (out of alignment)
+                transform('=', 'P');            // = ↔ alt plus  (out of alignment)
             },
             defaultEvaluate,
-            ['b', 'q'],
+            ['b', 'q', 'M', 'P', 'E'],
         ),
     ];
 }

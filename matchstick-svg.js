@@ -41,6 +41,13 @@ function charInner(c) {
   if (c === '=') return hSeg(4, 48) + hSeg(4, 64);
   if (c === '/') return diagSeg(27.5, 56, 45);
   if (c === '*') return diagSeg(27.5, 56, 45) + diagSeg(27.5, 56, -45);
+  // Operator alt forms — non-canonical stick positions (flexible ruleset only).
+  // M = alt '-': single stroke shifted upward (clearly different y from canonical at 56).
+  if (c === 'M') return hSeg(4, 42);
+  // E = alt '=': two strokes spread further apart than canonical (canonical is 48/64).
+  if (c === 'E') return hSeg(4, 40) + hSeg(4, 72);
+  // P = alt '+': cross with horizontal shifted upward.
+  if (c === 'P') return hSeg(4, 42) + vSeg(21.5, 22);
   return '';
 }
 

@@ -61,4 +61,45 @@ describe("flexible ruleset", () => {
       assert.ok(!/[bq]/.test(s), `default solution '${s}' should not contain alt chars`);
     }
   });
+
+  it("includes operator alt chars in legals", () => {
+    for (const c of ["M", "P", "E"]) {
+      assert.ok(flex.legals.includes(c), `flexible.legals should include '${c}'`);
+      assert.ok(!def.legals.includes(c),  `default.legals should NOT include '${c}'`);
+    }
+  });
+
+  it("operator alts evaluate as their canonical counterparts", () => {
+    assert.strictEqual(flex.evaluate("2E5M3".split("")), true);   // 2=5-3
+    assert.strictEqual(flex.evaluate("1+2E3".split("")), true);   // 1+2=3
+    assert.strictEqual(flex.evaluate("2M1=1".split("")), true);   // 2-1=1
+  });
+
+  it("'2-5=3' yields a swap solution using operator alts under flexible", () => {
+    // 2-5=3 is false (2-5=-2 ≠ 3). Single move: take a stick from the '='
+    // and add it to the '-'. Under flexible that produces alt forms in
+    // both positions, rendered as M (alt -) and E (alt =).
+    const sols = solutions(flex, "2-5=3");
+    assert.ok(sols.includes("2E5M3"),
+      `expected '2E5M3' (=alt-equals 5 alt-minus 3) in solutions: [${sols.join(", ")}]`);
+  });
+
+  it("default ruleset finds the same swap with canonical operators", () => {
+    const sols = solutions(def, "2-5=3");
+    assert.ok(sols.includes("2=5-3"),
+      `expected canonical '2=5-3' in default solutions: [${sols.join(", ")}]`);
+    // And default does NOT produce the alt form
+    for (const s of sols) {
+      assert.ok(!/[MPE]/.test(s), `default solution '${s}' should not contain operator alts`);
+    }
+  });
+
+  it("wires the alt-operator rules", () => {
+    assert.ok(flex.adds["M"].has("="), "M + stick → =");
+    assert.ok(flex.subs["="].has("M"), "removing a stick from = yields M");
+    assert.ok(flex.adds["-"].has("E"), "- + stick → E");
+    assert.ok(flex.subs["E"].has("-"), "removing a stick from E yields -");
+    assert.ok(flex.trans["+"].has("E"), "+ ↔ E");
+    assert.ok(flex.trans["="].has("P"), "= ↔ P");
+  });
 });
