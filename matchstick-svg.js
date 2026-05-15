@@ -30,6 +30,8 @@ const CHAR_SEGS = {
   '3':[0,2,3,5,6],   '4':[1,2,3,5],  '5':[0,1,3,5,6],
   '6':[0,1,3,4,5,6], '7':[0,2,5],    '8':[0,1,2,3,4,5,6],
   '9':[0,1,2,3,5,6], '-':[3],        ' ':[],
+  // Alt forms: 5-segment 6 (no top) and 5-segment 9 (no bottom)
+  'b':[1,3,4,5,6],   'q':[0,1,2,3,5],
 };
 
 function charInner(c) {
@@ -85,8 +87,10 @@ const MATCHSTICK_SYMBOL = `
 
 export function injectDefs(target = document.body) {
   if (document.getElementById('char-defs')) return;
-  const { legals } = getRuleSets().find(r => r.name === "default");
-  const charSymbols = legals.map(c =>
+  // Inject the union of legals across all rulesets so alt-form symbols
+  // (e.g. b, q under flexible) exist regardless of which ruleset is active.
+  const allLegals = new Set(getRuleSets().flatMap(r => r.legals));
+  const charSymbols = [...allLegals].map(c =>
     `<symbol id="${idFor(c)}" viewBox="${VB_X} ${VB_Y} ${VB_W} ${VB_H}">${charInner(c)}</symbol>`
   ).join('');
   target.insertAdjacentHTML('beforeend',

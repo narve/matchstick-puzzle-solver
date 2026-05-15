@@ -15,17 +15,28 @@
  * @property {(arr: string[]) => string[][]} mutate All single-match mutations (transforms + moves).
  */
 
+/**
+ * Maps alt-form characters back to their canonical counterparts for
+ * evaluation, input normalisation, and any other place where the math
+ * matters but the rendering doesn't.
+ */
+export const ALT_TO_CANONICAL = { b: '6', q: '9' };
+
+function canonicalise(arr) {
+    return arr.map(c => ALT_TO_CANONICAL[c] ?? c).join('');
+}
+
 function defaultEvaluate(arr) {
     if (arr.indexOf('=') <= -1) return false;
     try {
-        return !!eval(" " + arr.join("").replace('=', '==').replace('x', '*') + " ");
+        return !!eval(" " + canonicalise(arr).replace('=', '==').replace('x', '*') + " ");
     } catch (x) {
         return false;
     }
 }
 
 function strictEvaluate(arr) {
-    const s = arr.join("").trim();
+    const s = canonicalise(arr).trim();
     if (/^[+\-*/=]/.test(s) || /[+\-*/=]$/.test(s)) return false;
     return defaultEvaluate(arr);
 }
@@ -56,8 +67,8 @@ function defineDefaultMutations(add, transform) {
 /**
  * @returns {Ruleset}
  */
-function createRuleSet(name, description, defineFn, evaluateFn = defaultEvaluate) {
-    const legals = "0123456789+-*/= ".split("");
+function createRuleSet(name, description, defineFn, evaluateFn = defaultEvaluate, extraLegals = []) {
+    const legals = "0123456789+-*/= ".split("").concat(extraLegals);
     const adds = {};
     const subs = {};
     const trans = {};
@@ -121,6 +132,20 @@ export function getRuleSets() {
             defineDefaultMutations,
             strictEvaluate,
         ),
+        createRuleSet(
+            "flexible",
+            "Adds alternate forms of 6 and 9 drawn with 5 sticks instead of 6, so a single stick can be moved between '5' and the alt shapes.",
+            (add, transform) => {
+                defineDefaultMutations(add, transform);
+                add(' ', '-');                  // inherit default's boundary rule
+                transform('5', 'b');            // 5 ↔ alt-6
+                transform('5', 'q');            // 5 ↔ alt-9
+                add('b', '6');                  // alt-6 + top stick = canonical 6
+                add('q', '9');                  // alt-9 + bottom stick = canonical 9
+            },
+            defaultEvaluate,
+            ['b', 'q'],
+        ),
     ];
 }
 
@@ -160,7 +185,10 @@ function toLink(txt) {
 }
 
 function putSample(txt) {
-    document.querySelector("#equation").value = txt;
+    // The <input> renders text only, so we strip alt-form codes (b, q, …)
+    // back to canonical chars for it. The live preview (#preview) and any
+    // solution lists keep the raw form so alt SVGs stay visible there.
+    document.querySelector("#equation").value = canonicalise(txt.split(""));
     solve(txt);
 }
 
@@ -217,14 +245,16 @@ function renderSamples() {
     return visible;
 }
 
+// Ruleset permissiveness order (lowest → highest). A sample tagged with X
+// is visible under rulesets at index ≥ index(X), because every move usable
+// under X is also usable under any more permissive ruleset.
+const RULESET_PERMISSIVENESS = ["strict", "default", "flexible"];
+
 function isSampleVisible(sample, rulesetName) {
-    // A sample tagged with a ruleset shows whenever the active ruleset is at
-    // least as permissive. "strict" is the most restrictive; any sample
-    // workable under strict is also workable under more permissive rulesets.
     const tag = sample.ruleset ?? "strict";
-    if (rulesetName === "default") return tag === "strict" || tag === "default";
-    if (rulesetName === "strict") return tag === "strict";
-    return tag === rulesetName;
+    const tagIdx = RULESET_PERMISSIVENESS.indexOf(tag);
+    const activeIdx = RULESET_PERMISSIVENESS.indexOf(rulesetName);
+    return tagIdx >= 0 && activeIdx >= tagIdx;
 }
 
 function renderRulesTable() {
@@ -269,11 +299,22 @@ export function setup() {
     const initial = getRuleSets().some(r => r.name === saved) ? saved : "default";
     active = getRuleSet(initial);
 
-    const radios = document.querySelectorAll('input[name="ruleset"]');
-    radios.forEach(r => {
-        r.checked = (r.value === initial);
-        r.addEventListener('change', e => { if (e.target.checked) setActiveRuleset(e.target.value); });
-    });
+    const options = document.querySelector('#ruleset-options');
+    if (options) {
+        options.innerHTML = '';
+        for (const rs of getRuleSets()) {
+            const label = document.createElement('label');
+            const input = document.createElement('input');
+            input.type = 'radio';
+            input.name = 'ruleset';
+            input.value = rs.name;
+            input.checked = (rs.name === initial);
+            input.addEventListener('change', e => { if (e.target.checked) setActiveRuleset(e.target.value); });
+            label.appendChild(input);
+            label.append(' ' + rs.name.charAt(0).toUpperCase() + rs.name.slice(1));
+            options.appendChild(label);
+        }
+    }
     const desc = document.querySelector('#ruleset-description');
     if (desc) desc.textContent = active.description;
 
