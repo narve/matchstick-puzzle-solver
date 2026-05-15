@@ -48,7 +48,8 @@ function createRuleSet(name, defineFn) {
     }
 
     function mutate(arr) {
-        return transforms([' ', ...arr, ' ']).concat(moves(arr));
+        const padded = [' ', ...arr, ' '];
+        return transforms(padded).concat(moves(padded));
     }
 
     return { name, legals, adds, subs, trans, evaluate, mutate };
@@ -73,6 +74,10 @@ export function getRuleSets() {
             transform('6', '9');
             transform('0', '6');
             transform('0', '9');
+
+            // A '-' is one matchstick; adding it to an empty cell (the
+            // implicit space on either side of the puzzle) materialises it.
+            add(' ', '-');
         }),
     ];
 }
@@ -165,19 +170,20 @@ export function setup() {
     putSample(samplePuzzles[0].puzzle);
 
     // Make rules table:
+    const renderChar = ch =>
+        ch === ' ' ? '<span class="empty-slot">(empty)</span>' : charSvg(ch, TABLE_H, TABLE_H);
     const cell = set => {
         const td = document.createElement('td');
         const div = document.createElement('div');
         div.className = 'char-cell';
-        div.innerHTML = [...set].map(ch => charSvg(ch, TABLE_H, TABLE_H)).join('');
+        div.innerHTML = [...set].map(renderChar).join('');
         td.appendChild(div);
         return td;
     };
     const tbody = document.querySelector('tbody');
     for (const c of legals) {
-        if (c === ' ') continue;
         const th = document.createElement('th');
-        th.innerHTML = charSvg(c, TABLE_H, TABLE_H);
+        th.innerHTML = renderChar(c);
         const tr = document.createElement('tr');
         tr.appendChild(th);
         tr.appendChild(cell(trans[c]));
