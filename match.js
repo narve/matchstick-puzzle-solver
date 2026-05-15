@@ -75,7 +75,9 @@ function defineDefaultMutations(add, transform) {
  * @returns {Ruleset}
  */
 function createRuleSet(name, description, defineFn, evaluateFn = defaultEvaluate, extraLegals = []) {
-    const legals = "0123456789+-*/= ".split("").concat(extraLegals);
+    // Real characters first, alt-form characters next, the empty/boundary
+    // pseudo-character last so it appears at the bottom of the rules table.
+    const legals = "0123456789+-*/=".split("").concat(extraLegals, [' ']);
     const adds = {};
     const subs = {};
     const trans = {};
@@ -243,21 +245,35 @@ function solve(t) {
     }
 }
 
+const MAX_SAMPLES_PER_DIFFICULTY = 3;
+
 function renderSamples() {
     const samplesEl = document.querySelector("#samples");
     samplesEl.innerHTML = '';
+    const activeIdx = RULESET_PERMISSIVENESS.indexOf(active.name);
+    // Show three per difficulty. Prefer samples tagged closest to the active
+    // ruleset so e.g. picking 'flexible' surfaces its own showcase puzzles
+    // rather than always the strict-tagged ones.
+    const rank = s => Math.abs(RULESET_PERMISSIVENESS.indexOf(s.ruleset) - activeIdx);
     const visible = samplePuzzles.filter(s => isSampleVisible(s, active.name));
+    const shown = [];
     for (const difficulty of ["easy", "medium", "hard"]) {
-        const group = visible.filter(s => s.difficulty === difficulty);
+        const group = visible
+            .filter(s => s.difficulty === difficulty)
+            .sort((a, b) => rank(a) - rank(b))
+            .slice(0, MAX_SAMPLES_PER_DIFFICULTY);
         if (group.length === 0) continue;
-        const heading = element('li', '');
-        heading.innerHTML = `<strong>${difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}</strong>`;
-        samplesEl.appendChild(heading);
+        const section = document.createElement('section');
+        section.className = 'difficulty';
+        const heading = document.createElement('h3');
+        heading.textContent = difficulty.charAt(0).toUpperCase() + difficulty.slice(1);
+        section.appendChild(heading);
         const ul = document.createElement('ul');
-        group.forEach(s => ul.appendChild(toLink(s.puzzle)));
-        samplesEl.appendChild(ul);
+        group.forEach(s => { ul.appendChild(toLink(s.puzzle)); shown.push(s); });
+        section.appendChild(ul);
+        samplesEl.appendChild(section);
     }
-    return visible;
+    return shown;
 }
 
 // Ruleset permissiveness order (lowest → highest). A sample tagged with X
@@ -275,19 +291,29 @@ function isSampleVisible(sample, rulesetName) {
 function renderRulesTable() {
     const tbody = document.querySelector('tbody');
     tbody.innerHTML = '';
-    const renderChar = ch =>
+    // Subject = the row character (left column). Result = a cell value
+    // showing what one move produces. The space pseudo-char gets different
+    // labels in each role: "(empty)" as a subject, "nothing" as a result.
+    const renderSubject = ch =>
         ch === ' ' ? '<span class="empty-slot">(empty)</span>' : charSvg(ch, TABLE_H, TABLE_H);
+    const renderResult = ch =>
+        ch === ' ' ? '<span class="empty-slot">nothing</span>' : charSvg(ch, TABLE_H, TABLE_H);
     const cell = set => {
         const td = document.createElement('td');
         const div = document.createElement('div');
         div.className = 'char-cell';
-        div.innerHTML = [...set].map(renderChar).join('');
+        div.innerHTML = [...set].map(renderResult).join('');
         td.appendChild(div);
         return td;
     };
     for (const c of active.legals) {
+        // Hide the space pseudo-row when no rules involve it (e.g. strict
+        // disables the boundary rule). It's not a typeable character, so
+        // showing it with three blank cells is pure clutter.
+        if (c === ' ' && active.trans[c].size === 0 && active.adds[c].size === 0 && active.subs[c].size === 0)
+            continue;
         const th = document.createElement('th');
-        th.innerHTML = renderChar(c);
+        th.innerHTML = renderSubject(c);
         const tr = document.createElement('tr');
         tr.appendChild(th);
         tr.appendChild(cell(active.trans[c]));

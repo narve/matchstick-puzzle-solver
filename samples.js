@@ -56,12 +56,6 @@ export const samples = [
   },
 
   {
-    puzzle: "95-68=33",
-    solutions: ["99-66=33"],
-    difficulty: "hard",
-    ruleset: "strict",
-  },
-  {
     puzzle: "45/9=3",
     solutions: ["45/9=5", "45/5=9"],
     difficulty: "hard",
