@@ -26,6 +26,10 @@
     tbody th, tbody td { line-height: 0; }
     thead th { background: #f0e8d8; padding: 4px 8px; line-height: normal; }
     .char-cell { display: flex; flex-wrap: wrap; gap: 0; justify-content: center; align-items: center; }
+    tbody svg { max-width: 100%; height: auto; }
+    @media (max-width: 600px) {
+      tbody svg { width: auto; height: 44px; }
+    }
     #preview { margin: 0.6em 0 1em; min-height: 80px; }
     #validity {
         font-family: sans-serif;
@@ -73,9 +77,9 @@ Only one match may be moved. The table below lists possible moves.
     <thead>
     <tr>
         <th>Character</th>
-        <th>Move a match</th>
-        <th>Add a match</th>
-        <th>Remove a match</th>
+        <th>Move</th>
+        <th>Add</th>
+        <th>Remove</th>
     </tr>
     </thead>
     <tbody>
