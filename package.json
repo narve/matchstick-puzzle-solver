@@ -6,7 +6,11 @@
   "description": "Matchstick equation puzzle solver",
   "scripts": {
     "test": "node --test test/*.spec.js",
+    "test:e2e": "playwright test",
+    "test:all": "npm test && npm run test:e2e",
     "watch": "npx -y live-server --port=8765 --no-browser ."
   },
-  "devDependencies": {}
+  "devDependencies": {
+    "@playwright/test": "^1.50.0"
+  }
 }

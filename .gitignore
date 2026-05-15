@@ -1,2 +1,5 @@
 .playwright-mcp/
 auto-screenshots/
+node_modules/
+test-results/
+playwright-report/
