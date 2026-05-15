@@ -9,6 +9,11 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    env:
+      # Silence DEP0040 (punycode) and DEP0205 (module.register) deprecation
+      # noise emitted by transitive deps — fired multiple times per spawn,
+      # adds nothing actionable on our side.
+      NODE_OPTIONS: --disable-warning=DEP0040 --disable-warning=DEP0205
     steps:
       - uses: actions/checkout@v5
 

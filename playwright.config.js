@@ -15,9 +15,10 @@ export default defineConfig({
     trace: 'retain-on-failure',
   },
   webServer: {
-    // Static file server for the duration of the test run. Uses port 8766
-    // so it doesn't clash with `npm run watch` on 8765.
-    command: 'npx -y live-server --port=8766 --no-browser --quiet .',
+    // Plain static server (no file watching) so Playwright writing to
+    // playwright-report/ etc. during the run doesn't trigger a reload
+    // mid-test. python3 is pre-installed everywhere we care about.
+    command: 'python3 -m http.server 8766 --bind 127.0.0.1',
     url: 'http://localhost:8766/index.html',
     reuseExistingServer: !process.env.CI,
     timeout: 30_000,
