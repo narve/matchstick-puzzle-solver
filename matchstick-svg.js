@@ -41,13 +41,16 @@ function charInner(c) {
   if (c === '=') return hSeg(4, 48) + hSeg(4, 64);
   if (c === '/') return diagSeg(27.5, 56, 45);
   if (c === '*') return diagSeg(27.5, 56, 45) + diagSeg(27.5, 56, -45);
-  // Operator alt forms — non-canonical stick positions (flexible ruleset only).
-  // M = alt '-': single stroke shifted upward (clearly different y from canonical at 56).
-  if (c === 'M') return hSeg(4, 42);
-  // E = alt '=': two strokes spread further apart than canonical (canonical is 48/64).
-  if (c === 'E') return hSeg(4, 40) + hSeg(4, 72);
-  // P = alt '+': cross with horizontal shifted upward.
-  if (c === 'P') return hSeg(4, 42) + vSeg(21.5, 22);
+  // Operator alt forms — flexible ruleset only.
+  // Canonical reference: '-' = hSeg(4, 56); '=' = hSeg(4, 48) + hSeg(4, 64).
+  //
+  // Story for the '2-5=3 → 2=5-3' swap: the '=' loses its TOP stick (the
+  // bottom remains in place); that stick lands above the existing '-', so
+  // the new '=' has its bottom at the original '-' position and its top 16
+  // units above (same spread as canonical).
+  if (c === 'M') return hSeg(4, 64);                    // alt '-': leftover bottom stick of '='
+  if (c === 'E') return hSeg(4, 40) + hSeg(4, 56);      // alt '=': bottom at canonical '-' position
+  if (c === 'P') return hSeg(4, 48) + vSeg(21.5, 28);   // alt '+': horizontal at canonical '=' top
   return '';
 }
 

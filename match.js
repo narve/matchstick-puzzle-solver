@@ -124,8 +124,14 @@ function createRuleSet(name, description, defineFn, evaluateFn = defaultEvaluate
 export function getRuleSets() {
     return [
         createRuleSet(
+            "strict",
+            "Classic simple matchstick rules. Move exactly one match; the result should be a simple equation, like 6+4=4 → 8-4=4.",
+            defineDefaultMutations,
+            strictEvaluate,
+        ),
+        createRuleSet(
             "default",
-            "Lenient JS-style evaluator. A match dropped into the empty space on either side of the puzzle counts as a '-', so equations like -1+2=1 are legal solutions.",
+            "A bit more flexible: a match can also be moved into the empty space before the equation, becoming a leading '-'. For example, 1+2=7 → -1+2=1.",
             (add, transform) => {
                 defineDefaultMutations(add, transform);
                 // A '-' is one matchstick; adding it to an empty cell (the
@@ -134,14 +140,8 @@ export function getRuleSets() {
             },
         ),
         createRuleSet(
-            "strict",
-            "Classic matchstick rules. A match cannot appear from nowhere, and expressions starting or ending with an operator are rejected.",
-            defineDefaultMutations,
-            strictEvaluate,
-        ),
-        createRuleSet(
             "flexible",
-            "Adds alt-form digits (b, q for 5-stick 6 and 9) and alt-form operators (M, P, E). When a stick moves between operators, the result renders in a non-canonical position to make the move visible.",
+            "9 and 6 can be written in two variants, and - and = each have a (slightly misaligned) alternative form, shown when a match has moved into/out of them. Examples: 5+5=11 → 6+5=11 (alternative 6); 2-5=3 → 2=5-3 (=↔- swap).",
             (add, transform) => {
                 defineCoreMutations(add, transform);
                 add(' ', '-');                  // boundary rule (stick lands at canonical y)
@@ -297,11 +297,24 @@ function renderRulesTable() {
     }
 }
 
+/** Wraps any equation-like substring (chars 0-9, +-*\/=, length ≥3, containing
+ *  '=') in a clickable <a class="eq-link">, so the description can offer
+ *  interactive examples that load into the input on click. */
+function renderDescription(text) {
+    return text.replace(/[\d+\-*/=]{3,}/g, m =>
+        m.includes('=') ? `<a class="eq-link" data-equation="${m}">${m}</a>` : m
+    );
+}
+
+function showDescription() {
+    const desc = document.querySelector('#ruleset-description');
+    if (desc) desc.innerHTML = renderDescription(active.description);
+}
+
 function setActiveRuleset(name) {
     active = getRuleSet(name);
     localStorage.setItem('ruleset', name);
-    const desc = document.querySelector('#ruleset-description');
-    if (desc) desc.textContent = active.description;
+    showDescription();
     renderSamples();
     renderRulesTable();
     solve(document.querySelector("#equation").value);
@@ -331,7 +344,14 @@ export function setup() {
         }
     }
     const desc = document.querySelector('#ruleset-description');
-    if (desc) desc.textContent = active.description;
+    if (desc) {
+        showDescription();
+        // Delegated click handler — every equation in any description is clickable.
+        desc.addEventListener('click', e => {
+            const a = e.target.closest('.eq-link');
+            if (a) putSample(a.dataset.equation);
+        });
+    }
 
     document.querySelector("#equation").addEventListener('input', e => solve(e.srcElement.value));
 

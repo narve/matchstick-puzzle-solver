@@ -7,24 +7,33 @@ test.describe('matchstick puzzle solver', () => {
     await page.goto('/index.html');
   });
 
-  test('page loads with the three ruleset radios', async ({ page }) => {
+  test('page loads with the three ruleset radios in order strict / default / flexible', async ({ page }) => {
     const radios = page.locator('input[name="ruleset"]');
     await expect(radios).toHaveCount(3);
-    await expect(radios.nth(0)).toHaveValue('default');
-    await expect(radios.nth(1)).toHaveValue('strict');
+    await expect(radios.nth(0)).toHaveValue('strict');
+    await expect(radios.nth(1)).toHaveValue('default');
     await expect(radios.nth(2)).toHaveValue('flexible');
-    await expect(radios.nth(0)).toBeChecked();
+    // 'default' is the initially selected one even though it sits at index 1
+    await expect(page.locator('input[value="default"]')).toBeChecked();
   });
 
   test('ruleset description updates when switched', async ({ page }) => {
     const desc = page.locator('#ruleset-description');
-    await expect(desc).toContainText('Lenient JS-style evaluator');
+    await expect(desc).toContainText('A bit more flexible');
 
     await page.locator('input[value="strict"]').check();
-    await expect(desc).toContainText('Classic matchstick rules');
+    await expect(desc).toContainText('Classic simple matchstick rules');
 
     await page.locator('input[value="flexible"]').check();
-    await expect(desc).toContainText('alt-form digits');
+    await expect(desc).toContainText('9 and 6 can be written in two variants');
+  });
+
+  test('equations in the ruleset description are clickable and load into the input', async ({ page }) => {
+    // Default description mentions 1+2=7 and -1+2=1 as example puzzle → solution.
+    const link = page.locator('#ruleset-description .eq-link[data-equation="1+2=7"]');
+    await expect(link).toBeVisible();
+    await link.click();
+    await expect(page.locator('#equation')).toHaveValue('1+2=7');
   });
 
   test('typing an invalid equation flags it ✗ and shows solutions', async ({ page }) => {
