@@ -192,12 +192,34 @@ function element(tag, txt, subs = []) {
     return e;
 }
 
-function toLink(txt) {
+function makeEquationLi(txt, { onClick } = {}) {
     txt = txt.trim();
     const li = document.createElement('li');
     li.dataset.equation = txt;
     li.innerHTML = equationSvg(txt, LIST_H);
-    li.addEventListener('click', e => putSample(e.currentTarget.dataset.equation));
+    if (onClick) li.addEventListener('click', e => onClick(e.currentTarget.dataset.equation));
+    return li;
+}
+
+function puzzleHref(puzzle, rulesetName) {
+    const p = new URLSearchParams({ puzzle });
+    if (rulesetName && rulesetName !== 'default') p.set('ruleset', rulesetName);
+    return `puzzle.html?${p}`;
+}
+
+function toSampleLink(txt) {
+    const li = makeEquationLi(txt, { onClick: putSample });
+    // External-link arrow that opens the same puzzle in a standalone tab,
+    // under the index page's current ruleset.
+    const open = document.createElement('a');
+    open.className = 'sample-open';
+    open.href = puzzleHref(txt, active.name);
+    open.target = '_blank';
+    open.rel = 'noopener';
+    open.textContent = '↗';
+    open.title = 'Open in new tab';
+    open.addEventListener('click', e => e.stopPropagation());
+    li.appendChild(open);
     return li;
 }
 
@@ -209,28 +231,32 @@ function putSample(txt) {
     solve(txt);
 }
 
-function solve(t) {
-    const isOK = active.evaluate(t.split(""));
-    const mutations = active.mutate(t.split(""));
-    const solutions = mutations.filter(arr => active.evaluate(arr))
-        .map(m => m.join(""))
-        .map(toLink);
-    const other = mutations.filter(arr => !active.evaluate(arr))
-        .map(m => m.join(""))
-        .map(toLink);
+const MAX_QUIZ_TASKS = 5;
 
-    const preview = document.querySelector("#preview");
-    if (preview) preview.innerHTML = equationSvg(t, PREVIEW_H);
+/**
+ * Renders the "Found N solutions - Reveal" / "No solutions" / quiz-tasks
+ * UI for puzzle text `t` under `ruleset`, into `container`. Used by the
+ * live-input solver in index.html and by the standalone puzzle.html page.
+ *
+ * @param {HTMLElement} container  element whose contents will be replaced
+ * @param {Ruleset} ruleset
+ * @param {string} t  the puzzle equation as a plain string
+ * @param {object} [opts]
+ * @param {(eq:string)=>void} [opts.onSolutionClick]  if given, each
+ *        rendered list item is clickable and invokes this callback with
+ *        the equation it represents
+ * @returns {{ isOK: boolean, solutions: string[], other: string[] }}
+ */
+export function renderSolutionsBlock(container, ruleset, t, { onSolutionClick } = {}) {
+    const arr = t.split("");
+    const isOK = ruleset.evaluate(arr);
+    const mutations = ruleset.mutate(arr);
+    const solutions = mutations.filter(m => ruleset.evaluate(m)).map(m => m.join(""));
+    const other = mutations.filter(m => !ruleset.evaluate(m)).map(m => m.join(""));
 
-    const validity = document.querySelector("#validity");
-    if (validity) {
-        validity.textContent = isOK ? '✓' : '✗';
-        validity.style.color = isOK ? '#2e7d32' : '#c62828';
-        validity.title = isOK ? 'Equation is correct' : 'Equation is incorrect';
-    }
+    const makeLi = txt => makeEquationLi(txt, { onClick: onSolutionClick });
 
-    const statusElement = document.querySelector("#status");
-    statusElement.innerHTML = '';
+    container.innerHTML = '';
 
     if (!isOK && solutions.length > 0) {
         const p = element('p', `Found ${solutions.length} solution${solutions.length === 1 ? '' : 's'} - `);
@@ -238,21 +264,38 @@ function solve(t) {
         const summary = document.createElement('summary');
         summary.textContent = 'Reveal';
         details.appendChild(summary);
-        details.appendChild(element('ul', "", solutions));
+        details.appendChild(element('ul', "", solutions.map(makeLi)));
         p.appendChild(details);
-        statusElement.appendChild(p);
+        container.appendChild(p);
     } else if (!isOK) {
-        statusElement.appendChild(element('p', 'No solutions found 😢'));
-    }
-
-    if (isOK) {
-        const MAX_QUIZ_TASKS = 5;
+        container.appendChild(element('p', 'No solutions found 😢'));
+    } else {
         const shown = other.slice(0, MAX_QUIZ_TASKS);
         const label = other.length > MAX_QUIZ_TASKS
             ? `Found ${other.length} possible quiz tasks - showing ${MAX_QUIZ_TASKS}:`
             : `${other.length} possible quiz tasks: `;
-        statusElement.appendChild(element('p', label));
-        statusElement.appendChild(element('ul', "", shown));
+        container.appendChild(element('p', label));
+        container.appendChild(element('ul', "", shown.map(makeLi)));
+    }
+    return { isOK, solutions, other };
+}
+
+function solve(t) {
+    const preview = document.querySelector("#preview");
+    if (preview) preview.innerHTML = equationSvg(t, PREVIEW_H);
+
+    const { isOK } = renderSolutionsBlock(
+        document.querySelector("#status"),
+        active,
+        t,
+        { onSolutionClick: putSample },
+    );
+
+    const validity = document.querySelector("#validity");
+    if (validity) {
+        validity.textContent = isOK ? '✓' : '✗';
+        validity.style.color = isOK ? '#2e7d32' : '#c62828';
+        validity.title = isOK ? 'Equation is correct' : 'Equation is incorrect';
     }
 }
 
@@ -273,7 +316,7 @@ function renderSamples() {
         .sort((a, b) => rank(a) - rank(b))
         .slice(0, MAX_SAMPLES_PER_DIFFICULTY);
     const ul = document.createElement('ul');
-    group.forEach(s => ul.appendChild(toLink(s.puzzle)));
+    group.forEach(s => ul.appendChild(toSampleLink(s.puzzle)));
     samplesEl.appendChild(ul);
     return group;
 }

@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Matchstick puzzle</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        /* puzzle-page-specific tweaks */
+        header { font-family: sans-serif; font-size: 0.95em; margin-bottom: 1em; }
+        header a { color: #5a4a2a; text-decoration: none; border-bottom: 1px dashed #b8a778; }
+        header a:hover { color: #3a2e1a; }
+        h1#title { font-family: sans-serif; font-weight: normal; font-size: 1.4em; margin: 0.2em 0 0.8em; }
+        #preview { min-height: 160px; }
+        #invalid-message {
+            font-family: sans-serif;
+            border: 1px solid #c8b89a; border-left: 4px solid #c62828;
+            background: #fff5f5; padding: 0.8em 1em;
+            border-radius: 4px;
+        }
+        #anim-area { margin: 1em 0 0.5em; }
+        #anim-area svg.equation-anim { overflow: visible; }
+        #solve-btn {
+            margin-top: 0.4em;
+            font-family: sans-serif; font-size: 1em;
+            padding: 0.4em 1.4em;
+            border: 1px solid #c8b89a; border-radius: 4px;
+            background: #f0e8d8; color: #5a4a2a;
+            cursor: pointer;
+        }
+        #solve-btn:hover:not(:disabled) { background: #e6dcc0; }
+        #solve-btn:disabled { opacity: 0.5; cursor: default; }
+        /* Phase 2 stub. `display: flex` would override the `hidden`
+           attribute, so scope it to the not-hidden case. */
+        #journey-nav:not([hidden]) {
+            margin-top: 1.5em; font-family: sans-serif;
+            display: flex; gap: 0.6em; align-items: center;
+        }
+        #journey-nav button { padding: 0.3em 1em; border: 1px solid #c8b89a; border-radius: 4px; background: #f0e8d8; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+<header>
+    <a href="index.html">← Matchstick solver</a>
+</header>
+
+<h1 id="title">Puzzle</h1>
+
+<div id="invalid-message" hidden></div>
+
+<div id="puzzle-area" hidden>
+    <div id="preview"></div>
+    <div id="status"></div>
+
+    <h2 id="solve-heading" style="font-family: sans-serif; font-size: 1.1em;">Watch it solved</h2>
+    <div id="anim-area"></div>
+    <button id="solve-btn" type="button">Show me!</button>
+</div>
+
+<!-- Phase 2: journey navigation. Hidden until a puzzle-set is provided. -->
+<nav id="journey-nav" hidden>
+    <button id="prev-btn" type="button">← Prev</button>
+    <span id="journey-pos"></span>
+    <button id="next-btn" type="button">Next →</button>
+</nav>
+
+<script type="module" src="./puzzle-page.js"></script>
+
+</body>
+</html>

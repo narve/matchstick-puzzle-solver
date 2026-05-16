@@ -4,32 +4,15 @@
     <meta charset="UTF-8">
     <title>MatchSolver</title>
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="stylesheet" href="styles.css">
 
 <style>
-    body {
-        background: #faf7f0;
-        color: #3a2e1a;
-        max-width: 50em;
-        margin: 0 auto;
-        padding: 2em;
-    }
+    /* Index-page-specific styles. Shared visuals live in styles.css. */
     input#equation {
         font-family: monospace;
         font-size: 1.5em;
         padding: 0.2em 0.4em;
     }
-    ul { list-style: none; padding-left: 1em; }
-    li[data-equation] {
-        cursor: pointer;
-        width: fit-content;
-        max-width: 100%;
-        padding: 2px 6px;
-        margin-bottom: 4px;
-        border: 1px solid #e5dcc4;
-        border-radius: 4px;
-        background: rgba(255, 255, 255, 0.4);
-    }
-    li[data-equation]:hover { background: #f0e8d8; border-color: #c8b89a; }
     table { border-collapse: collapse; margin-top: 0.5em; }
     th, td { border: 1px solid #c8b89a; padding: 0; text-align: center; vertical-align: middle; }
     tbody th, tbody td { line-height: 0; }
@@ -44,22 +27,6 @@
     tbody svg { max-width: 100%; height: auto; }
     @media (max-width: 600px) {
       tbody svg { width: auto; height: 44px; }
-    }
-    #preview { margin: 0.6em 0 1em; min-height: 80px; }
-    #status details { display: inline; }
-    #status details > summary {
-        cursor: pointer; display: inline;
-        color: #5a4a2a;
-        text-decoration: underline;
-        list-style: none;
-    }
-    #status details > summary::-webkit-details-marker { display: none; }
-    #status details > summary:hover { color: #3a2e1a; }
-    #validity {
-        font-family: sans-serif;
-        font-size: 1.2em;
-        margin-left: 0.5em;
-        opacity: 0.7;
     }
     #ruleset-picker {
         border: 1px solid #c8b89a;
@@ -92,13 +59,6 @@
     #difficulty-filter label:has(input:checked) {
         background: #f0e8d8; border-color: #b8a778;
     }
-    .eq-link {
-        font-family: monospace;
-        color: #5a4a2a;
-        cursor: pointer;
-        border-bottom: 1px dashed #b8a778;
-    }
-    .eq-link:hover { background: #f0e8d8; color: #3a2e1a; }
 </style>
 </head>
 <body>
