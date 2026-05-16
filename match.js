@@ -288,16 +288,19 @@ function isSampleVisible(sample, rulesetName) {
     return tagIdx >= 0 && activeIdx >= tagIdx;
 }
 
-function renderRulesTable() {
-    const tbody = document.querySelector('tbody');
+/**
+ * Render the rules table for a ruleset into a `<tbody>`.
+ * Shared by the main UI and media.html.
+ */
+export function renderRulesTable(tbody, ruleset, charSize = TABLE_H) {
     tbody.innerHTML = '';
     // Subject = the row character (left column). Result = a cell value
     // showing what one move produces. The space pseudo-char gets different
     // labels in each role: "(empty)" as a subject, "nothing" as a result.
     const renderSubject = ch =>
-        ch === ' ' ? '<span class="empty-slot">(empty)</span>' : charSvg(ch, TABLE_H, TABLE_H);
+        ch === ' ' ? '<span class="empty-slot">(empty)</span>' : charSvg(ch, charSize, charSize);
     const renderResult = ch =>
-        ch === ' ' ? '<span class="empty-slot">nothing</span>' : charSvg(ch, TABLE_H, TABLE_H);
+        ch === ' ' ? '<span class="empty-slot">nothing</span>' : charSvg(ch, charSize, charSize);
     const cell = set => {
         const td = document.createElement('td');
         const div = document.createElement('div');
@@ -306,7 +309,7 @@ function renderRulesTable() {
         td.appendChild(div);
         return td;
     };
-    for (const c of active.legals) {
+    for (const c of ruleset.legals) {
         // Hide alt-form rows (b, q, M, P, E …): every rule involving them
         // is also expressed in the canonical row (e.g. trans['5'] already
         // contains 'b', so the 'b' row would just duplicate that info).
@@ -314,15 +317,15 @@ function renderRulesTable() {
         // Hide the space pseudo-row when no rules involve it (e.g. strict
         // disables the boundary rule). It's not a typeable character, so
         // showing it with three blank cells is pure clutter.
-        if (c === ' ' && active.trans[c].size === 0 && active.adds[c].size === 0 && active.subs[c].size === 0)
+        if (c === ' ' && ruleset.trans[c].size === 0 && ruleset.adds[c].size === 0 && ruleset.subs[c].size === 0)
             continue;
         const th = document.createElement('th');
         th.innerHTML = renderSubject(c);
         const tr = document.createElement('tr');
         tr.appendChild(th);
-        tr.appendChild(cell(active.trans[c]));
-        tr.appendChild(cell(active.adds[c]));
-        tr.appendChild(cell(active.subs[c]));
+        tr.appendChild(cell(ruleset.trans[c]));
+        tr.appendChild(cell(ruleset.adds[c]));
+        tr.appendChild(cell(ruleset.subs[c]));
         tbody.appendChild(tr);
     }
 }
@@ -346,7 +349,7 @@ function setActiveRuleset(name) {
     localStorage.setItem('ruleset', name);
     showDescription();
     renderSamples();
-    renderRulesTable();
+    renderRulesTable(document.querySelector('tbody'), active);
     solve(document.querySelector("#equation").value);
 }
 
@@ -386,6 +389,6 @@ export function setup() {
     document.querySelector("#equation").addEventListener('input', e => solve(e.srcElement.value));
 
     const visible = renderSamples();
-    renderRulesTable();
+    renderRulesTable(document.querySelector('tbody'), active);
     putSample((visible[0] ?? samplePuzzles[0]).puzzle);
 }

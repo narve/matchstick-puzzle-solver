@@ -1,7 +1,8 @@
 // Shared matchstick-SVG rendering used by index.html (via match.js) and media.html.
 import { getRuleSets } from './match.js';
 
-export const VB_X = 2, VB_Y = 6, VB_W = 48, VB_H = 86;
+const VB_X = 2, VB_Y = 6;
+export const VB_W = 48, VB_H = 86;
 
 const USE = '<use href="#matchstick" width="60" height="200"/>';
 
@@ -58,7 +59,7 @@ const charIdSuffix = {
   '+': 'plus', '-': 'minus', '*': 'mul', '/': 'div',
   '=': 'eq',   ' ': 'space',
 };
-export const idFor = c => `c-${charIdSuffix[c] ?? c}`;
+const idFor = c => `c-${charIdSuffix[c] ?? c}`;
 
 const MATCHSTICK_SYMBOL = `
   <symbol id="matchstick" viewBox="0 0 60 200">
