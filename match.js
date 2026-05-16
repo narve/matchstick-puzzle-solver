@@ -233,47 +233,75 @@ function solve(t) {
     statusElement.innerHTML = '';
 
     if (!isOK && solutions.length > 0) {
-        statusElement.appendChild(element('p', `Found ${solutions.length} solution${solutions.length === 1 ? '' : 's'}:`));
-        statusElement.appendChild(element('ul', "", solutions));
+        const p = element('p', `Found ${solutions.length} solution${solutions.length === 1 ? '' : 's'} - `);
+        const details = document.createElement('details');
+        const summary = document.createElement('summary');
+        summary.textContent = 'Reveal';
+        details.appendChild(summary);
+        details.appendChild(element('ul', "", solutions));
+        p.appendChild(details);
+        statusElement.appendChild(p);
     } else if (!isOK) {
         statusElement.appendChild(element('p', 'No solutions found 😢'));
     }
 
     if (isOK) {
-        statusElement.appendChild(element('p', `${other.length} possible quiz tasks: `));
-        statusElement.appendChild(element('ul', "", other));
+        const MAX_QUIZ_TASKS = 5;
+        const shown = other.slice(0, MAX_QUIZ_TASKS);
+        const label = other.length > MAX_QUIZ_TASKS
+            ? `Found ${other.length} possible quiz tasks - showing ${MAX_QUIZ_TASKS}:`
+            : `${other.length} possible quiz tasks: `;
+        statusElement.appendChild(element('p', label));
+        statusElement.appendChild(element('ul', "", shown));
     }
 }
 
 const MAX_SAMPLES_PER_DIFFICULTY = 3;
+const DIFFICULTIES = ["easy", "medium", "hard"];
+let activeDifficulty = "easy";
 
 function renderSamples() {
     const samplesEl = document.querySelector("#samples");
     samplesEl.innerHTML = '';
     const activeIdx = RULESET_PERMISSIVENESS.indexOf(active.name);
-    // Show three per difficulty. Prefer samples tagged closest to the active
-    // ruleset so e.g. picking 'flexible' surfaces its own showcase puzzles
-    // rather than always the strict-tagged ones.
+    // Prefer samples tagged closest to the active ruleset so e.g. picking
+    // 'flexible' surfaces its own showcase puzzles rather than always the
+    // strict-tagged ones.
     const rank = s => Math.abs(RULESET_PERMISSIVENESS.indexOf(s.ruleset) - activeIdx);
-    const visible = samplePuzzles.filter(s => isSampleVisible(s, active.name));
-    const shown = [];
-    for (const difficulty of ["easy", "medium", "hard"]) {
-        const group = visible
-            .filter(s => s.difficulty === difficulty)
-            .sort((a, b) => rank(a) - rank(b))
-            .slice(0, MAX_SAMPLES_PER_DIFFICULTY);
-        if (group.length === 0) continue;
-        const section = document.createElement('section');
-        section.className = 'difficulty';
-        const heading = document.createElement('h3');
-        heading.textContent = difficulty.charAt(0).toUpperCase() + difficulty.slice(1);
-        section.appendChild(heading);
-        const ul = document.createElement('ul');
-        group.forEach(s => { ul.appendChild(toLink(s.puzzle)); shown.push(s); });
-        section.appendChild(ul);
-        samplesEl.appendChild(section);
+    const group = samplePuzzles
+        .filter(s => isSampleVisible(s, active.name) && s.difficulty === activeDifficulty)
+        .sort((a, b) => rank(a) - rank(b))
+        .slice(0, MAX_SAMPLES_PER_DIFFICULTY);
+    const ul = document.createElement('ul');
+    group.forEach(s => ul.appendChild(toLink(s.puzzle)));
+    samplesEl.appendChild(ul);
+    return group;
+}
+
+function renderDifficultyFilter() {
+    const el = document.querySelector('#difficulty-filter');
+    if (!el) return;
+    el.innerHTML = '';
+    for (const d of DIFFICULTIES) {
+        const label = document.createElement('label');
+        const input = document.createElement('input');
+        input.type = 'radio';
+        input.name = 'difficulty';
+        input.value = d;
+        input.checked = (d === activeDifficulty);
+        input.addEventListener('change', e => { if (e.target.checked) setActiveDifficulty(e.target.value); });
+        const span = document.createElement('span');
+        span.textContent = d.charAt(0).toUpperCase() + d.slice(1);
+        label.appendChild(input);
+        label.appendChild(span);
+        el.appendChild(label);
     }
-    return shown;
+}
+
+function setActiveDifficulty(d) {
+    activeDifficulty = d;
+    localStorage.setItem('difficulty', d);
+    renderSamples();
 }
 
 // Ruleset permissiveness order (lowest → highest). A sample tagged with X
@@ -360,6 +388,9 @@ export function setup() {
     const initial = getRuleSets().some(r => r.name === saved) ? saved : "default";
     active = getRuleSet(initial);
 
+    const savedDifficulty = localStorage.getItem('difficulty');
+    if (DIFFICULTIES.includes(savedDifficulty)) activeDifficulty = savedDifficulty;
+
     const options = document.querySelector('#ruleset-options');
     if (options) {
         options.innerHTML = '';
@@ -388,6 +419,7 @@ export function setup() {
 
     document.querySelector("#equation").addEventListener('input', e => solve(e.srcElement.value));
 
+    renderDifficultyFilter();
     const visible = renderSamples();
     renderRulesTable(document.querySelector('tbody'), active);
     putSample((visible[0] ?? samplePuzzles[0]).puzzle);

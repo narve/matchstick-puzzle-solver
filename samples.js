@@ -85,8 +85,8 @@ export const samples = [
     ruleset: "default",
   },
   {
-    puzzle: "3+4=7",
-    solutions: ["-3+4=1"],
+    puzzle: "4+5=7",
+    solutions: ["-4+5=1"],
     difficulty: "easy",
     ruleset: "default",
   },

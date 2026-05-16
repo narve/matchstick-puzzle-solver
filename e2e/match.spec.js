@@ -135,6 +135,7 @@ test.describe('matchstick puzzle solver', () => {
 
     test('alt-6 SVG renders as a 5-segment shape (b symbol)', async ({ page }) => {
       await page.locator('#equation').fill('5+5=11');
+      await page.locator('#status details > summary').click();
       // Find a solution containing b, then assert its SVG uses #c-b
       const altLi = page.locator('#status li[data-equation*="b"]').first();
       await expect(altLi).toBeVisible();
@@ -160,6 +161,7 @@ test.describe('matchstick puzzle solver', () => {
 
     test('alt-= (E) and alt-- (M) render with their own SVG symbols', async ({ page }) => {
       await page.locator('#equation').fill('2-5=3');
+      await page.locator('#status details > summary').click();
       const altLi = page.locator('#status li[data-equation="2E5M3"]');
       await expect(altLi).toBeVisible();
       const hrefs = await altLi.locator('use').evaluateAll(
@@ -171,6 +173,7 @@ test.describe('matchstick puzzle solver', () => {
 
     test('clicking an alt-form solution normalises the input', async ({ page }) => {
       await page.locator('#equation').fill('2-5=3');
+      await page.locator('#status details > summary').click();
       await page.locator('#status li[data-equation="2E5M3"]').click();
       // Input should not contain alt chars (E, M canonicalise to =, -)
       const val = await page.locator('#equation').inputValue();
