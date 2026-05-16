@@ -256,7 +256,7 @@ function solve(t) {
     }
 }
 
-const MAX_SAMPLES_PER_DIFFICULTY = 3;
+const MAX_SAMPLES_PER_DIFFICULTY = 6;
 const DIFFICULTIES = ["easy", "medium", "hard"];
 let activeDifficulty = "easy";
 
