@@ -8,7 +8,7 @@
 //   puzzle-set   named puzzle set or comma-separated puzzles
 //   index        0-based position within the set
 
-import { getRuleSets, getRuleSet } from './match.js';
+import { getRuleSets, getRuleSet, renderRulesTable } from './match.js';
 import { injectDefs, equationSvg } from './matchstick-svg.js';
 import { findFirstSolution, wireSolveButton } from './animate.js';
 
@@ -58,6 +58,11 @@ function setup() {
 
     // Big preview SVG.
     document.getElementById('preview').innerHTML = equationSvg(puzzle, PREVIEW_H);
+
+    // Rules table — populated up-front, hidden behind a disclosure.
+    document.getElementById('rules-ruleset-name').textContent = rulesetName;
+    renderRulesTable(document.getElementById('rules-body'), ruleset);
+    document.getElementById('rules-toggle').hidden = false;
 
     // Decide what to show below the puzzle. Three cases:
     //   - already-true equation: brief note, no Show-me UI.

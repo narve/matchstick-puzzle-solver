@@ -52,6 +52,23 @@ li[data-equation]:hover { background: #f0e8d8; border-color: #c8b89a; }
 }
 .eq-link:hover { background: #f0e8d8; color: #3a2e1a; }
 
+/* Rules table — shared between index.html and puzzle.html. */
+table { border-collapse: collapse; margin-top: 0.5em; }
+th, td { border: 1px solid #c8b89a; padding: 0; text-align: center; vertical-align: middle; }
+tbody th, tbody td { line-height: 0; }
+thead th { background: #f0e8d8; padding: 4px 8px; line-height: normal; }
+.char-cell { display: flex; flex-wrap: wrap; gap: 0; justify-content: center; align-items: center; }
+.empty-slot {
+  font-family: sans-serif; font-size: 0.8em; color: #7a6a4a;
+  padding: 0.15em 0.5em; line-height: normal;
+  border: 1px dashed #b8a778; border-radius: 4px;
+  background: #f5ecd6;
+}
+tbody svg { max-width: 100%; height: auto; }
+@media (max-width: 600px) {
+  tbody svg { width: auto; height: 44px; }
+}
+
 /* The little "open in new tab" arrow appended to each sample link. */
 .sample-open {
     font-family: sans-serif; font-size: 0.85em;

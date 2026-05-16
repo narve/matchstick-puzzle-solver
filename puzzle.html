@@ -37,6 +37,19 @@
             display: flex; gap: 0.6em; align-items: center;
         }
         #journey-nav button { padding: 0.3em 1em; border: 1px solid #c8b89a; border-radius: 4px; background: #f0e8d8; cursor: pointer; }
+
+        /* "Show me the rules!" disclosure at the bottom of the page. */
+        #rules-toggle { margin-top: 2em; }
+        #rules-toggle > summary {
+            cursor: pointer; display: inline-block;
+            font-family: sans-serif; font-size: 1em;
+            color: #5a4a2a;
+            text-decoration: underline;
+            list-style: none;
+        }
+        #rules-toggle > summary::-webkit-details-marker { display: none; }
+        #rules-toggle > summary:hover { color: #3a2e1a; }
+        #rules-toggle p { font-family: sans-serif; color: #5a4a2a; }
     </style>
 </head>
 <body>
@@ -57,6 +70,22 @@
     <div id="anim-area"></div>
     <button id="solve-btn" type="button">Show me!</button>
 </div>
+
+<details id="rules-toggle" hidden>
+    <summary>Show me the rules!</summary>
+    <p>Legal moves under the <strong id="rules-ruleset-name"></strong> ruleset:</p>
+    <table>
+        <thead>
+            <tr>
+                <th>Character</th>
+                <th>Move</th>
+                <th>Add</th>
+                <th>Remove</th>
+            </tr>
+        </thead>
+        <tbody id="rules-body"></tbody>
+    </table>
+</details>
 
 <!-- Phase 2: journey navigation. Hidden until a puzzle-set is provided. -->
 <nav id="journey-nav" hidden>
