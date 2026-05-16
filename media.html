@@ -26,6 +26,42 @@
 
   <div id="char-showcase" class="char-cell"></div>
 
+  <h2>Longest sample puzzle</h2>
+  <p>Puzzle:</p>
+  <div id="longest-puzzle"></div>
+  <p>Solution:</p>
+  <div id="longest-solution"></div>
+
+  <h2>Animation experiment</h2>
+  <p>Pick a sample below, then click "Solve" to animate the moving stick
+     from its original position to the first listed solution
+     (lift → travel → place).</p>
+  <div id="sample-picker" style="
+      display: flex; flex-wrap: wrap; gap: 0.4em 0.8em;
+      font-family: sans-serif; font-size: 0.9em;
+      margin: 0.4em 0 0.8em;"></div>
+  <div id="anim-area" style="margin-top: 40px;"></div>
+  <style>
+    #anim-area svg.equation-anim { overflow: visible; }
+    #sample-picker a {
+      cursor: pointer; color: #5a4a2a;
+      padding: 0.2em 0.5em;
+      border: 1px solid #c8b89a; border-radius: 4px;
+      background: rgba(255,255,255,0.4);
+      text-decoration: none;
+    }
+    #sample-picker a:hover { background: #f0e8d8; }
+    #sample-picker a.active { background: #f0e8d8; border-color: #b8a778; font-weight: bold; }
+  </style>
+  <button id="solve-btn" type="button" style="
+      margin-top: 0.5em;
+      font-family: sans-serif; font-size: 1em;
+      padding: 0.3em 1.2em;
+      border: 1px solid #c8b89a; border-radius: 4px;
+      background: #f0e8d8; color: #5a4a2a;
+      cursor: pointer;
+  ">Solve</button>
+
   <h2>Character mutations</h2>
   <p>What each character can become when one matchstick is moved, added, or removed.</p>
 
@@ -43,7 +79,9 @@
 
   <script type="module">
     import { getRuleSet, renderRulesTable } from './match.js';
-    import { injectDefs, charSvg, VB_W, VB_H } from './matchstick-svg.js';
+    import { injectDefs, charSvg, equationSvg, equationAnimatableSvg,
+             charSegments, VB_W, VB_H } from './matchstick-svg.js';
+    import { samples } from './samples.js';
 
     const ruleset = getRuleSet("default");
     injectDefs(document.body);
@@ -53,9 +91,158 @@
         charSvg(c, 96, 248) + (c === '7' ? '<div style="flex-basis:100%;height:0"></div>' : '')
       ).join('');
 
+    const longest = samples.reduce((a, b) => b.puzzle.length > a.puzzle.length ? b : a);
+    const EQ_H = 80;
+    document.getElementById('longest-puzzle').innerHTML = equationSvg(longest.puzzle, EQ_H);
+    document.getElementById('longest-solution').innerHTML =
+      longest.solutions.map(s => equationSvg(s, EQ_H)).join('<br>');
+
     const CHAR_SCALE = 1.1;
     const CH = Math.round(VB_H * CHAR_SCALE);
     renderRulesTable(document.getElementById('rules-body'), ruleset, CH);
+
+    // ── Animation experiment ────────────────────────────────────────────
+    // Render `longest.puzzle` with each stick as an addressable <g>, then
+    // animate the diff (puzzle → first solution) on Solve click.
+    //
+    // Padding: a solution produced via mutate() includes the leading and
+    // trailing space cells (boundary positions) so a move that materialises
+    // a leading '-' aligns naturally. The longest sample's listed
+    // solution is hand-authored without padding, so we pad both strings
+    // with one leading and trailing space to align positions for the diff.
+    const ANIM_H = 90;
+    const LIFT_MS = 800, MOVE_MS = 800, PLACE_MS = 800;
+    const LIFT_DY = -22;      // lift in local viewBox units (~25% of char height)
+    const LIFT_SCALE = 0.30;  // resting scale is 0.2
+
+    // Current animation pair (mutable; updated by the sample picker).
+    // Both strings come from mutate(): the puzzle as ' ' + puzzle + ' ' to
+    // match mutate()'s implicit boundary padding, and the solution as the
+    // joined mutation array — that way both have the same length and
+    // diffSegments() aligns positionally for any kind of move (transform,
+    // in-char swap, or boundary-' '→'-' move).
+    let puzzle  = '';
+    let solution = '';
+
+    // Map a sample (e.g. {puzzle:"1+3+7=9", solutions:["-1+3+7=q"], ruleset:"flexible"})
+    // to the matching mutate() output as a padded character array.
+    // Falls back to the first true mutation if no listed solution matches
+    // (shouldn't happen for valid samples).
+    function resolveSolution(sample) {
+      const rs = getRuleSet(sample.ruleset);
+      const mutations = rs.mutate(sample.puzzle.split(''));
+      const target = sample.solutions[0];
+      // Compare with trimmed join — mutate() output keeps the leading and
+      // trailing space slots, samples.js solutions don't.
+      let found = mutations.find(arr => arr.join('').trim() === target);
+      if (!found) found = mutations.find(arr => rs.evaluate(arr));
+      return found ?? rs.mutate(sample.puzzle.split(''))[0];
+    }
+
+    function diffSegments(p, s) {
+        const removed = [], added = [];
+        const n = Math.max(p.length, s.length);
+        for (let i = 0; i < n; i++) {
+            const pSegs = charSegments(p[i] ?? ' ');
+            const sSegs = charSegments(s[i] ?? ' ');
+            const pKeys = new Set(pSegs.map(x => x.key));
+            const sKeys = new Set(sSegs.map(x => x.key));
+            for (const seg of pSegs) if (!sKeys.has(seg.key)) removed.push({ pos: i, seg });
+            for (const seg of sSegs) if (!pKeys.has(seg.key)) added.push({ pos: i, seg });
+        }
+        return removed.map((r, i) => ({ from: r, to: added[i] })).filter(p => p.to);
+    }
+
+    const lerp = (a, b, u) => a + (b - a) * u;
+    const easeInOut = u => u < 0.5 ? 2 * u * u : 1 - Math.pow(-2 * u + 2, 2) / 2;
+    const xform = (tx, ty, rot, sc) => `translate(${tx},${ty}) rotate(${rot}) scale(${sc})`;
+
+    const animArea = document.getElementById('anim-area');
+    const solveBtn = document.getElementById('solve-btn');
+    const picker   = document.getElementById('sample-picker');
+    let solved = false;
+
+    function resetAnim() {
+      animArea.innerHTML = equationAnimatableSvg(puzzle, ANIM_H);
+      solveBtn.textContent = 'Solve';
+      solveBtn.disabled = false;
+      solved = false;
+    }
+
+    function selectSample(s, link) {
+      const solArr = resolveSolution(s);
+      // Pad puzzle to mutate()'s padded length (input length + 2).
+      puzzle = ' ' + s.puzzle + ' ';
+      solution = solArr.join('');
+      resetAnim();
+      for (const a of picker.querySelectorAll('a')) a.classList.toggle('active', a === link);
+    }
+
+    // Build the sample picker.
+    let initialLink = null;
+    samples.forEach((s, idx) => {
+      const a = document.createElement('a');
+      a.textContent = `${s.puzzle} (${s.ruleset}/${s.difficulty})`;
+      a.addEventListener('click', () => selectSample(s, a));
+      picker.appendChild(a);
+      if (s === longest) initialLink = a;
+    });
+    selectSample(longest, initialLink);
+
+    function runAnim() {
+      if (solved) { resetAnim(); return; }
+      solveBtn.disabled = true;
+      const svg = animArea.querySelector('svg.equation-anim');
+      const moves = diffSegments(puzzle, solution);
+      const tracks = moves.map(({ from, to }) => {
+        const g = svg.querySelector(
+          `g.seg[data-pos="${from.pos}"][data-key="${from.seg.key}"]`);
+        if (!g) return null;
+        return {
+          g, to,
+          srcX: from.seg.tx + from.pos * VB_W, srcY: from.seg.ty, srcRot: from.seg.rot,
+          dstX: to.seg.tx   + to.pos   * VB_W, dstY: to.seg.ty,   dstRot: to.seg.rot,
+        };
+      }).filter(Boolean);
+      const TOTAL = LIFT_MS + MOVE_MS + PLACE_MS;
+      const liftEnd = LIFT_MS / TOTAL;
+      const moveEnd = (LIFT_MS + MOVE_MS) / TOTAL;
+      const t0 = performance.now();
+      function frame(now) {
+        const t = Math.min(1, (now - t0) / TOTAL);
+        for (const tr of tracks) {
+          let x, y, rot, sc;
+          if (t < liftEnd) {
+            const u = easeInOut(t / liftEnd);
+            x = tr.srcX; y = lerp(tr.srcY, tr.srcY + LIFT_DY, u);
+            rot = tr.srcRot; sc = lerp(0.2, LIFT_SCALE, u);
+          } else if (t < moveEnd) {
+            const u = easeInOut((t - liftEnd) / (moveEnd - liftEnd));
+            x = lerp(tr.srcX, tr.dstX, u);
+            y = lerp(tr.srcY + LIFT_DY, tr.dstY + LIFT_DY, u);
+            rot = lerp(tr.srcRot, tr.dstRot, u); sc = LIFT_SCALE;
+          } else {
+            const u = easeInOut((t - moveEnd) / (1 - moveEnd));
+            x = tr.dstX; y = lerp(tr.dstY + LIFT_DY, tr.dstY, u);
+            rot = tr.dstRot; sc = lerp(LIFT_SCALE, 0.2, u);
+          }
+          tr.g.setAttribute('transform', xform(x, y, rot, sc));
+        }
+        if (t < 1) requestAnimationFrame(frame);
+        else {
+          for (const tr of tracks) {
+            tr.g.setAttribute('transform', xform(tr.dstX, tr.dstY, tr.dstRot, 0.2));
+            tr.g.dataset.pos = String(tr.to.pos);
+            tr.g.dataset.key = tr.to.seg.key;
+          }
+          solveBtn.textContent = 'Reset';
+          solveBtn.disabled = false;
+          solved = true;
+        }
+      }
+      requestAnimationFrame(frame);
+    }
+    solveBtn.addEventListener('click', runAnim);
   </script>
 
 </body>

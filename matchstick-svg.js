@@ -118,3 +118,78 @@ export function equationSvg(text, h) {
   const w = Math.round(h * (VB_W / VB_H));
   return [...text].map(c => charSvg(c, w, h)).join('');
 }
+
+// ── Animation support ────────────────────────────────────────────────
+// Each visible stick in a character is described by its position (tx, ty)
+// and rotation in the character's local coordinate space. `key` is a
+// stable identifier per physical stick location, so the same key on two
+// chars means "the same stick is here in both", enabling set-diff for
+// animation: removed = puzzle-keys − solution-keys, added = the inverse.
+
+function metaH(x, y) { return { kind: 'h', tx: x, ty: y + 6, rot: -90, key: `h${x},${y}` }; }
+function metaV(x, y) { return { kind: 'v', tx: x, ty: y,     rot: 0,   key: `v${x},${y}` }; }
+
+export function charSegments(c) {
+  if (CHAR_SEGS[c] !== undefined) {
+    return CHAR_SEGS[c].map(i => {
+      const [fn, x, y] = SEG[i];
+      return fn === hSeg ? metaH(x, y) : metaV(x, y);
+    });
+  }
+  if (c === '+') return [metaH(4, 56), metaV(21.5, 35)];
+  if (c === '=') return [metaH(4, 48), metaH(4, 64)];
+  if (c === 'M') return [metaH(4, 64)];
+  if (c === 'E') return [metaH(4, 40), metaH(4, 56)];
+  if (c === 'P') return [metaH(4, 48), metaV(21.5, 28)];
+  // '/', '*': diagonal — no animatable metadata in v1.
+  return [];
+}
+
+const STICK_USE = '<use href="#matchstick" width="60" height="200"/>';
+
+// Render one stick group at (tx, ty) with rotation `rot`, in a coordinate
+// frame whose origin lands at the stick's pivot. Wrapped in a single <g>
+// whose `transform` attribute we mutate during animation.
+function stickGroupSvg(seg, posIdx, xOffset, extraAttrs = '') {
+  const tx = seg.tx + xOffset;
+  return `<g class="seg" data-pos="${posIdx}" data-key="${seg.key}" `
+       + `transform="translate(${tx},${seg.ty}) rotate(${seg.rot}) scale(0.2)" ${extraAttrs}>`
+       + STICK_USE
+       + `</g>`;
+}
+
+/**
+ * Returns a single inline <svg> for the whole equation with every stick
+ * as an addressable <g class="seg" data-pos data-key>. Use for animation.
+ * Falls back to a static <use href="#c-X"> for chars without segment
+ * metadata (e.g. '/', '*').
+ */
+// Inline a single diagonal stick (matchstick rotated `angle` degrees,
+// pivoted at (cx + xOff, cy)) — same transform chain as diagSeg() so the
+// rendering matches a static charSvg exactly. Diagonals don't carry a
+// segment key, so they render but don't participate in animation.
+function diagStickSvg(cx, cy, angle, xOff, posIdx) {
+  return `<g class="seg-static" data-pos="${posIdx}" `
+       + `transform="translate(${cx + xOff},${cy}) rotate(${angle}) translate(-6,-21) scale(0.2)">`
+       + STICK_USE + `</g>`;
+}
+
+export function equationAnimatableSvg(text, h) {
+  const chars = [...text];
+  const w = Math.round(h * (VB_W / VB_H));
+  const totalW = chars.length * VB_W;
+  const inner = chars.map((c, i) => {
+    const xOff = i * VB_W;
+    if (c === '/') return diagStickSvg(27.5, 56, 45, xOff, i);
+    if (c === '*') return diagStickSvg(27.5, 56, 45, xOff, i)
+                        + diagStickSvg(27.5, 56, -45, xOff, i);
+    // Everything else (digits, '+', '-', '=', alt forms, space) has full
+    // segment metadata; render as addressable <g class="seg"> sticks.
+    return charSegments(c).map(s => stickGroupSvg(s, i, xOff)).join('');
+  }).join('');
+  return `<svg class="equation-anim" width="${w * chars.length}" height="${h}" `
+       + `viewBox="${VB_X} ${VB_Y} ${totalW} ${VB_H}" `
+       + `xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle">`
+       + inner + `</svg>`;
+}
+
