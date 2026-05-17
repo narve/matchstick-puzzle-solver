@@ -1,7 +1,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 
-import { getRuleSet } from "../match.js";
+import { getRuleSet } from "../src/match.js";
 
 const strict = getRuleSet("strict");
 const def = getRuleSet("default");

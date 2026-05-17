@@ -10,7 +10,8 @@
 //   puzzle-set   id of a named set in puzzle-sets.js. Enables prev/next
 //                navigation within the set.
 
-import { getRuleSets, getRuleSet, renderRulesTable } from './match.js';
+import { getRuleSets, getRuleSet } from './match.js';
+import { renderRulesTable } from './render.js';
 import { injectDefs, equationSvg } from './matchstick-svg.js';
 import { findFirstSolution, animateSolve, padPuzzle } from './animate.js';
 import { equationAnimatableSvg } from './matchstick-svg.js';

@@ -6,7 +6,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 
-import { getRuleSets } from "../match.js";
+import { getRuleSets } from "../src/match.js";
 
 const { evaluate, mutate } = getRuleSets().find(r => r.name === "default");
 

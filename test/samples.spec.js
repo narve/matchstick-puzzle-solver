@@ -1,8 +1,8 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 
-import { getRuleSet } from "../match.js";
-import { samples } from "../samples.js";
+import { getRuleSet } from "../src/match.js";
+import { samples } from "../src/samples.js";
 
 function solve(rs, equation) {
   const mutations = rs.mutate(equation.split(""));
