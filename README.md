@@ -25,8 +25,12 @@ Live at <https://sticks.dv8.no> / <https://narve.github.io/matchstick-puzzle-sol
 - The rules table is generated dynamically from the active ruleset, so
   switching rulesets immediately shows which moves are legal.
 - ~30 sample puzzles tagged by difficulty (easy / medium / hard) and by
-  the most-restrictive ruleset under which they solve, displayed three
-  per difficulty in a responsive grid.
+  the most-restrictive ruleset under which they solve, displayed six
+  per difficulty.
+- **Standalone puzzle page** (`puzzle.html?puzzle=…`) for sharing a single
+  puzzle, with an animated reveal of the solution. Supports a
+  **journey mode** (`?puzzle-set=n1`) that walks through a curated set
+  with prev/next navigation.
 
 ## Development
 

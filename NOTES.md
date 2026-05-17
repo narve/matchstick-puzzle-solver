@@ -1,7 +1,9 @@
 # Implementation notes
 
-Reference for `media.html` — the 7-segment matchstick rendering and the
-rules-of-the-game audit.
+Reference for the 7-segment matchstick rendering geometry and the
+rules-of-the-game audit. See `src/matchstick-svg.js` for the geometry and
+`src/match.js` for the rule declarations. `media.html` is a visual
+showcase that exercises both.
 
 ## Matchstick geometry
 
@@ -18,16 +20,21 @@ The base symbol `#matchstick` has `viewBox="0 0 60 200"`. Inside it:
 
 ### Rendering helpers — what their `(x, y)` arguments mean
 
-All three apply `scale(0.2)`, so the rendered stick is `12 wide × 36 tall`
+Straight sticks are described by `metaH(x, y)` / `metaV(x, y)` in
+`src/matchstick-svg.js`, which return `{tx, ty, rot, key}` objects.
+`segSvg(s)` renders a `<g transform="translate(tx,ty) rotate(rot)
+scale(0.2)">`. Diagonals go through `diagSvg({cx, cy, angle})`.
+
+All sticks apply `scale(0.2)`, so the rendered stick is `12 wide × 36 tall`
 (body) or roughly `12 × 40` (with head). Length-along-stick after scale: 40.
 
-| Function | Transform | Body center in user coords | Full center in user coords |
+| Helper | Transform | Body center in user coords | Full center in user coords |
 |---|---|---|---|
-| `vSeg(x, y)` | `translate(x,y) scale(0.2)` | `(x+6, y+23.5)` | `(x+6, y+21)` |
-| `hSeg(x, y)` | `translate(x, y+6) scale(0.2) rotate(-90)` | `(x+23.5, y)` | `(x+21, y)` |
-| `diagSeg(cx, cy, a)` | `translate(cx,cy) rotate(a) translate(-6,-21) scale(0.2)` | rotated body center at `(cx, cy)` | `(cx, cy)` |
+| `metaV(x, y)` | `translate(x,y) scale(0.2)` | `(x+6, y+23.5)` | `(x+6, y+21)` |
+| `metaH(x, y)` | `translate(x, y+6) scale(0.2) rotate(-90)` | `(x+23.5, y)` | `(x+21, y)` |
+| `diagSvg({cx,cy,a})` | `translate(cx,cy) rotate(a) translate(-6,-21) scale(0.2)` | rotated body center at `(cx, cy)` | `(cx, cy)` |
 
-Derivation for `hSeg`: source body center `(30, 117.5)` → `rotate(-90)` →
+Derivation for `metaH`: source body center `(30, 117.5)` → `rotate(-90)` →
 `(117.5, -30)` → `scale(0.2)` → `(23.5, -6)` → `translate(x, y+6)` →
 `(x+23.5, y)`. The `y+6` in the translate cancels the `-6` from scale, so
 the body centerline ends up at user y = `y`.
@@ -36,16 +43,17 @@ the body centerline ends up at user y = `y`.
 
 Two facts to remember when aligning operators with the digit middle bar:
 
-1. The digit middle bar uses `hSeg(4, 56)` — its body center is at
+1. The digit middle bar uses `metaH(4, 56)` — its body center is at
    `(27.5, 56)`, **not** at viewBox center `(24, 62)`. The middle bar sits
    slightly right-of-center because the matchstick has a heavy head at one
    end.
-2. To make `+` cross at the middle bar's center: use `hSeg(4, 56)` plus a
-   vSeg whose full-stick center lands at `(27.5, 56)`. That's
-   `vSeg(21.5, 35)` because `(21.5+6, 35+21) = (27.5, 56)`.
-3. To make `×` and `/` intersect at the same point: `diagSeg(27.5, 56, ±45)`.
-4. For `=` to share a center-line with `×`: two `hSeg`s equidistant above
-   and below y=56, e.g. `hSeg(4, 48)` + `hSeg(4, 64)` (16 px apart).
+2. To make `+` cross at the middle bar's center: use `metaH(4, 56)` plus a
+   `metaV` whose full-stick center lands at `(27.5, 56)`. That's
+   `metaV(21.5, 35)` because `(21.5+6, 35+21) = (27.5, 56)`.
+3. To make `×` and `/` intersect at the same point: `{cx: 27.5, cy: 56,
+   angle: ±45}` (via `DIAG_SPECS`).
+4. For `=` to share a center-line with `×`: two `metaH`s equidistant above
+   and below y=56, e.g. `metaH(4, 48)` + `metaH(4, 64)` (16 px apart).
 
 ### viewBox-centering trick
 
@@ -60,12 +68,15 @@ This recenters the bulk-content region without moving any segment.
 
 ## Rules audit method
 
-Rules are declared in `media.html`:
+Rules are declared in `src/match.js` inside `defineCoreMutations` /
+`defineDefaultMutations` and the per-ruleset blocks in `buildRuleSets`,
+using two locally-scoped helpers passed to each `defineFn`:
 
-- `addRule(a, b)`: adding one stick to `a` produces `b`. Implies
+- `add(a, b)`: adding one stick to `a` produces `b`. Implies
   `len(b) == len(a)+1` **and** `segments(a) ⊆ segments(b)`.
-- `tfRule(a, b)`: moving one stick transforms `a` into `b` (bidirectional).
-  Implies `len(a) == len(b)` **and** `|segments(a) △ segments(b)| == 2`.
+- `transform(a, b)`: moving one stick transforms `a` into `b`
+  (bidirectional). Implies `len(a) == len(b)` **and**
+  `|segments(a) △ segments(b)| == 2`.
 
 ### Segment counts (per `CHAR_SEGS`)
 
@@ -87,9 +98,9 @@ Rules are declared in `media.html`:
 ### How to check the rules are complete
 
 1. **For each subset+1 pair** (counts differ by 1, smaller ⊂ larger):
-   confirm there is an `addRule` between them.
+   confirm there is an `add()` between them.
 2. **For each same-count pair** with symmetric difference of size 2:
-   confirm there is a `tfRule` between them.
+   confirm there is a `transform()` between them.
 3. Operators only participate where geometrically obvious:
    `-`⊂`+`, `-`⊂`=`, `/`⊂`*`.
 
