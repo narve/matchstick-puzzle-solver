@@ -264,6 +264,9 @@ export function renderSolutionsBlock(container, ruleset, t, { onSolutionClick } 
         const summary = document.createElement('summary');
         summary.textContent = 'Reveal';
         details.appendChild(summary);
+        details.addEventListener('toggle', () => {
+            summary.textContent = details.open ? 'Hide' : 'Reveal';
+        });
         details.appendChild(element('ul', "", solutions.map(makeLi)));
         p.appendChild(details);
         container.appendChild(p);
