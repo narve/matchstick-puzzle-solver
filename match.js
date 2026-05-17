@@ -122,8 +122,14 @@ function createRuleSet(name, description, defineFn, evaluateFn = defaultEvaluate
     return { name, description, legals, adds, subs, trans, evaluate: evaluateFn, mutate };
 }
 
+let _cachedRuleSets = null;
+
 /** @returns {Ruleset[]} */
 export function getRuleSets() {
+    return _cachedRuleSets ??= buildRuleSets();
+}
+
+function buildRuleSets() {
     return [
         createRuleSet(
             "strict",
@@ -201,11 +207,8 @@ function makeEquationLi(txt, { onClick } = {}) {
     return li;
 }
 
-function puzzleHref(puzzle, rulesetName) {
-    const p = new URLSearchParams({ puzzle });
-    if (rulesetName && rulesetName !== 'default') p.set('ruleset', rulesetName);
-    return `puzzle.html?${p}`;
-}
+// (puzzleHref moved to puzzle-url.js)
+import { puzzleHref } from './puzzle-url.js';
 
 function toSampleLink(txt) {
     const li = makeEquationLi(txt, { onClick: putSample });
@@ -213,7 +216,7 @@ function toSampleLink(txt) {
     // under the index page's current ruleset.
     const open = document.createElement('a');
     open.className = 'sample-open';
-    open.href = puzzleHref(txt, active.name);
+    open.href = puzzleHref({ puzzle: txt, ruleset: active.name });
     open.target = '_blank';
     open.rel = 'noopener';
     open.textContent = '↗';
@@ -284,8 +287,7 @@ export function renderSolutionsBlock(container, ruleset, t, { onSolutionClick } 
 }
 
 function solve(t) {
-    const preview = document.querySelector("#preview");
-    if (preview) preview.innerHTML = equationSvg(t, PREVIEW_H);
+    document.querySelector("#preview").innerHTML = equationSvg(t, PREVIEW_H);
 
     const { isOK } = renderSolutionsBlock(
         document.querySelector("#status"),
@@ -295,11 +297,9 @@ function solve(t) {
     );
 
     const validity = document.querySelector("#validity");
-    if (validity) {
-        validity.textContent = isOK ? '✓' : '✗';
-        validity.style.color = isOK ? '#2e7d32' : '#c62828';
-        validity.title = isOK ? 'Equation is correct' : 'Equation is incorrect';
-    }
+    validity.textContent = isOK ? '✓' : '✗';
+    validity.style.color = isOK ? 'var(--ok)' : 'var(--err)';
+    validity.title = isOK ? 'Equation is correct' : 'Equation is incorrect';
 }
 
 const MAX_SAMPLES_PER_DIFFICULTY = 6;
@@ -324,24 +324,41 @@ function renderSamples() {
     return group;
 }
 
-function renderDifficultyFilter() {
-    const el = document.querySelector('#difficulty-filter');
-    if (!el) return;
-    el.innerHTML = '';
-    for (const d of DIFFICULTIES) {
+/**
+ * Render a group of radio inputs into `container`. Each option becomes a
+ * `<label><input type="radio"><span>Label</span></label>`. The label gets
+ * `labelClass` (optional). `onChange` fires with the picked value.
+ */
+function renderRadioGroup(container, { name, options, selected, onChange, labelClass }) {
+    if (!container) return;
+    container.innerHTML = '';
+    for (const opt of options) {
         const label = document.createElement('label');
+        if (labelClass) label.className = labelClass;
         const input = document.createElement('input');
         input.type = 'radio';
-        input.name = 'difficulty';
-        input.value = d;
-        input.checked = (d === activeDifficulty);
-        input.addEventListener('change', e => { if (e.target.checked) setActiveDifficulty(e.target.value); });
+        input.name = name;
+        input.value = opt.value;
+        input.checked = (opt.value === selected);
+        input.addEventListener('change', e => { if (e.target.checked) onChange(e.target.value); });
         const span = document.createElement('span');
-        span.textContent = d.charAt(0).toUpperCase() + d.slice(1);
+        span.textContent = opt.label;
         label.appendChild(input);
         label.appendChild(span);
-        el.appendChild(label);
+        container.appendChild(label);
     }
+}
+
+const titleCase = s => s.charAt(0).toUpperCase() + s.slice(1);
+
+function renderDifficultyFilter() {
+    renderRadioGroup(document.querySelector('#difficulty-filter'), {
+        name: 'difficulty',
+        options: DIFFICULTIES.map(d => ({ value: d, label: titleCase(d) })),
+        selected: activeDifficulty,
+        onChange: setActiveDifficulty,
+        labelClass: 'chip-soft',
+    });
 }
 
 function setActiveDifficulty(d) {
@@ -363,11 +380,15 @@ function isSampleVisible(sample, rulesetName) {
 }
 
 /**
- * Render the rules table for a ruleset into a `<tbody>`.
- * Shared by the main UI and media.html.
+ * Render the rules table for a ruleset into `container`.
+ * Builds the full `<table>` (thead + tbody). Shared by all pages.
  */
-export function renderRulesTable(tbody, ruleset, charSize = TABLE_H) {
-    tbody.innerHTML = '';
+export function renderRulesTable(container, ruleset, charSize = TABLE_H) {
+    container.innerHTML =
+        '<table><thead><tr>'
+        + '<th>Character</th><th>Move</th><th>Add</th><th>Remove</th>'
+        + '</tr></thead><tbody></tbody></table>';
+    const tbody = container.querySelector('tbody');
     // Subject = the row character (left column). Result = a cell value
     // showing what one move produces. The space pseudo-char gets different
     // labels in each role: "(empty)" as a subject, "nothing" as a result.
@@ -423,7 +444,7 @@ function setActiveRuleset(name) {
     localStorage.setItem('ruleset', name);
     showDescription();
     renderSamples();
-    renderRulesTable(document.querySelector('tbody'), active);
+    renderRulesTable(document.querySelector('#rules-table'), active);
     solve(document.querySelector("#equation").value);
 }
 
@@ -437,22 +458,12 @@ export function setup() {
     const savedDifficulty = localStorage.getItem('difficulty');
     if (DIFFICULTIES.includes(savedDifficulty)) activeDifficulty = savedDifficulty;
 
-    const options = document.querySelector('#ruleset-options');
-    if (options) {
-        options.innerHTML = '';
-        for (const rs of getRuleSets()) {
-            const label = document.createElement('label');
-            const input = document.createElement('input');
-            input.type = 'radio';
-            input.name = 'ruleset';
-            input.value = rs.name;
-            input.checked = (rs.name === initial);
-            input.addEventListener('change', e => { if (e.target.checked) setActiveRuleset(e.target.value); });
-            label.appendChild(input);
-            label.append(' ' + rs.name.charAt(0).toUpperCase() + rs.name.slice(1));
-            options.appendChild(label);
-        }
-    }
+    renderRadioGroup(document.querySelector('#ruleset-options'), {
+        name: 'ruleset',
+        options: getRuleSets().map(rs => ({ value: rs.name, label: titleCase(rs.name) })),
+        selected: initial,
+        onChange: setActiveRuleset,
+    });
     const desc = document.querySelector('#ruleset-description');
     if (desc) {
         showDescription();
@@ -467,6 +478,6 @@ export function setup() {
 
     renderDifficultyFilter();
     const visible = renderSamples();
-    renderRulesTable(document.querySelector('tbody'), active);
+    renderRulesTable(document.querySelector('#rules-table'), active);
     putSample((visible[0] ?? samplePuzzles[0]).puzzle);
 }

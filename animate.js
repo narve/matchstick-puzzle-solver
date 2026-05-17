@@ -13,7 +13,7 @@ const DEFAULTS = {
     restScale: 0.20,
 };
 
-const padPuzzle = p => ' ' + p + ' ';
+export const padPuzzle = p => ' ' + p + ' ';
 
 /**
  * Returns the first solution as a padded string (length = puzzle.length + 2),

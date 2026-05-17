@@ -12,9 +12,10 @@
 
 import { getRuleSets, getRuleSet, renderRulesTable } from './match.js';
 import { injectDefs, equationSvg } from './matchstick-svg.js';
-import { findFirstSolution, animateSolve } from './animate.js';
+import { findFirstSolution, animateSolve, padPuzzle } from './animate.js';
 import { equationAnimatableSvg } from './matchstick-svg.js';
 import { puzzleSets } from './puzzle-sets.js';
+import { puzzleHref } from './puzzle-url.js';
 
 const PREVIEW_H = 160;
 const ANIM_H = 110;
@@ -67,10 +68,8 @@ function resolve(params) {
     return { puzzle, rulesetName };
 }
 
-function puzzleHrefInSet(set, index) {
-    const p = new URLSearchParams({ puzzle: set.puzzles[index].puzzle, 'puzzle-set': set.id });
-    return `puzzle.html?${p}`;
-}
+const puzzleHrefInSet = (set, index) =>
+    puzzleHref({ puzzle: set.puzzles[index].puzzle, setId: set.id });
 
 function setupJourneyNav(set, indexInSet) {
     const nav = document.getElementById('journey-nav');
@@ -104,8 +103,7 @@ function setup() {
 
     const titleEl = document.getElementById('title');
     if (set) {
-        titleEl.innerHTML = `<small style="display:block; color:#7a6a4a; font-size:0.7em; margin-bottom:0.1em;">`
-            + `${set.name}</small>Puzzle: ${puzzle}`;
+        titleEl.innerHTML = `<small class="set-name">${set.name}</small>Puzzle: ${puzzle}`;
     } else {
         titleEl.textContent =
             `Puzzle: ${puzzle}${rulesetName === 'default' ? '' : ` (${rulesetName})`}`;
@@ -118,7 +116,7 @@ function setup() {
 
     // Rules table — populated up-front, hidden behind a disclosure.
     document.getElementById('rules-ruleset-name').textContent = rulesetName;
-    renderRulesTable(document.getElementById('rules-body'), ruleset);
+    renderRulesTable(document.getElementById('rules-table'), ruleset);
     document.getElementById('rules-toggle').hidden = false;
 
     // Decide what to show below the puzzle. Three cases:
@@ -131,14 +129,14 @@ function setup() {
     const btn = document.getElementById('solve-btn');
 
     if (isOK) {
-        status.innerHTML = `<p style="font-family: sans-serif; color: #2e7d32;">`
+        status.innerHTML = `<p class="status-note ok">`
             + `This equation is already true — no single-stick move needed.</p>`;
         animArea.hidden = true;
         btn.hidden = true;
     } else {
         const paddedSolution = findFirstSolution(puzzle, ruleset);
         if (!paddedSolution) {
-            status.innerHTML = `<p style="font-family: sans-serif; color: #7a6a4a;">`
+            status.innerHTML = `<p class="status-note">`
                 + `No single-stick solution under the <strong>${rulesetName}</strong> ruleset. `
                 + `Try a more permissive ruleset on the <a href="index.html">solver page</a>.</p>`;
             animArea.hidden = true;
@@ -158,7 +156,7 @@ function setup() {
  * The animation plays on each reveal.
  */
 function wireRevealToggle(btn, animArea, puzzle, paddedSolution) {
-    const paddedPuzzle = ' ' + puzzle + ' ';
+    const paddedPuzzle = padPuzzle(puzzle);
     let revealed = false;
     btn.textContent = 'Reveal the solution';
     animArea.hidden = true;

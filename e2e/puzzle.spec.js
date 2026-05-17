@@ -77,7 +77,7 @@ test.describe('puzzle.html', () => {
       // Open and check rows render
       await page.locator('#rules-toggle > summary').click();
       // Flexible adds alt-form characters → at least a digit row exists
-      await expect(page.locator('#rules-body tr')).not.toHaveCount(0);
+      await expect(page.locator('#rules-table tbody tr')).not.toHaveCount(0);
     });
   });
 

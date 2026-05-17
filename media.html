@@ -4,19 +4,23 @@
   <meta charset="UTF-8">
   <title>Matchstick</title>
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="stylesheet" href="styles.css">
   <style>
-    body {
-      font-family: Georgia, serif;
-      padding: 2em;
-      background: #faf7f0;
-      color: #3a2e1a;
-    }
+    body { font-family: Georgia, serif; }
     .matchstick {
       display: inline-block;
       vertical-align: middle;
       margin: 0 4px;
       filter: drop-shadow(1px 2px 2px rgba(0, 0, 0, 0.45));
     }
+    #sample-picker {
+      display: flex; flex-wrap: wrap; gap: 0.4em 0.8em;
+      font-family: sans-serif; font-size: 0.9em;
+      margin: 0.4em 0 0.8em;
+    }
+    #anim-area { margin-top: 40px; }
+    #anim-area svg.equation-anim { overflow: visible; }
+    #solve-btn { margin-top: 0.5em; padding: 0.3em 1.2em; }
   </style>
 </head>
 <body>
@@ -36,46 +40,14 @@
   <p>Pick a sample below, then click "Solve" to animate the moving stick
      from its original position to the first listed solution
      (lift → travel → place).</p>
-  <div id="sample-picker" style="
-      display: flex; flex-wrap: wrap; gap: 0.4em 0.8em;
-      font-family: sans-serif; font-size: 0.9em;
-      margin: 0.4em 0 0.8em;"></div>
-  <div id="anim-area" style="margin-top: 40px;"></div>
-  <style>
-    #anim-area svg.equation-anim { overflow: visible; }
-    #sample-picker a {
-      cursor: pointer; color: #5a4a2a;
-      padding: 0.2em 0.5em;
-      border: 1px solid #c8b89a; border-radius: 4px;
-      background: rgba(255,255,255,0.4);
-      text-decoration: none;
-    }
-    #sample-picker a:hover { background: #f0e8d8; }
-    #sample-picker a.active { background: #f0e8d8; border-color: #b8a778; font-weight: bold; }
-  </style>
-  <button id="solve-btn" type="button" style="
-      margin-top: 0.5em;
-      font-family: sans-serif; font-size: 1em;
-      padding: 0.3em 1.2em;
-      border: 1px solid #c8b89a; border-radius: 4px;
-      background: #f0e8d8; color: #5a4a2a;
-      cursor: pointer;
-  ">Solve</button>
+  <div id="sample-picker"></div>
+  <div id="anim-area"></div>
+  <button id="solve-btn" class="chip" type="button">Solve</button>
 
   <h2>Character mutations</h2>
   <p>What each character can become when one matchstick is moved, added, or removed.</p>
 
-  <table>
-    <thead>
-      <tr>
-        <th>Character</th>
-        <th>Move a match</th>
-        <th>Add a match</th>
-        <th>Remove a match</th>
-      </tr>
-    </thead>
-    <tbody id="rules-body"></tbody>
-  </table>
+  <div id="rules-table"></div>
 
   <script type="module">
     import { getRuleSet, renderRulesTable } from './match.js';
@@ -99,7 +71,7 @@
 
     const CHAR_SCALE = 1.1;
     const CH = Math.round(VB_H * CHAR_SCALE);
-    renderRulesTable(document.getElementById('rules-body'), ruleset, CH);
+    renderRulesTable(document.getElementById('rules-table'), ruleset, CH);
 
     // ── Animation experiment ────────────────────────────────────────────
     const picker = document.getElementById('sample-picker');
@@ -116,6 +88,7 @@
     let initialLink = null;
     samples.forEach(s => {
         const a = document.createElement('a');
+        a.className = 'chip';
         a.textContent = `${s.puzzle} (${s.ruleset}/${s.difficulty})`;
         a.addEventListener('click', () => selectSample(s, a));
         picker.appendChild(a);

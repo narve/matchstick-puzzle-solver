@@ -14,7 +14,7 @@
         padding: 0.2em 0.4em;
     }
     #ruleset-picker {
-        border: 1px solid #c8b89a;
+        border: 1px solid var(--border);
         border-radius: 6px;
         padding: 0.4em 0.8em 0.6em;
         margin-bottom: 1em;
@@ -23,27 +23,16 @@
     }
     #ruleset-picker legend { padding: 0 0.4em; font-weight: bold; }
     #ruleset-picker label { margin-right: 1em; cursor: pointer; }
-    #ruleset-description { display: block; margin-top: 0.4em; color: #7a6a4a; font-size: 0.9em; }
+    #ruleset-picker label span { margin-left: 0.25em; }
+    #ruleset-description { display: block; margin-top: 0.4em; color: var(--text-muted); font-size: 0.9em; }
     #samples ul { padding-left: 0.6em; margin: 0; }
     #difficulty-filter {
-        font-family: sans-serif; font-size: 0.95em;
         margin: 0.4em 0 0.6em;
         display: flex; gap: 0.5em;
     }
-    #difficulty-filter label {
-        cursor: pointer;
-        padding: 0.2em 0.7em;
-        border: 1px solid #c8b89a; border-radius: 4px;
-        background: rgba(255, 255, 255, 0.4);
-        color: #5a4a2a;
-        user-select: none;
-    }
-    #difficulty-filter label:hover { background: #f0e8d8; }
+    /* Difficulty filter uses .chip-soft from styles.css; just hide the radio. */
     #difficulty-filter input { display: none; }
     #difficulty-filter input:checked + span { font-weight: bold; }
-    #difficulty-filter label:has(input:checked) {
-        background: #f0e8d8; border-color: #b8a778;
-    }
 </style>
 </head>
 <body>
@@ -91,18 +80,7 @@
 A single match may be moved — either <em>within</em> a character (a re-shaping of the same number of sticks, see the <strong>Move</strong> column) or <em>from</em> one character <em>to</em> another (see the <strong>Add</strong> and <strong>Remove</strong> columns: every match leaving a position via Remove must arrive somewhere via Add).
 </p>
 
-<table>
-    <thead>
-    <tr>
-        <th>Character</th>
-        <th>Move</th>
-        <th>Add</th>
-        <th>Remove</th>
-    </tr>
-    </thead>
-    <tbody>
-    </tbody>
-</table>
+<div id="rules-table"></div>
 
 
 

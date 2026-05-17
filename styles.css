@@ -1,10 +1,26 @@
-/* Shared visual styles used by index.html and puzzle.html.
+/* Shared visual styles used by index.html, puzzle.html, and media.html.
    Page-specific rules (rules table, ruleset picker, difficulty filter,
    etc.) stay inline in their owning page. */
 
+:root {
+    --bg-page: #faf7f0;
+    --bg-chip: #f0e8d8;
+    --bg-chip-hover: #e6dcc0;
+    --bg-chip-soft: rgba(255, 255, 255, 0.4);
+    --bg-empty: #f5ecd6;
+    --border: #c8b89a;
+    --border-strong: #b8a778;
+    --border-soft: #e5dcc4;
+    --text: #3a2e1a;
+    --text-dim: #5a4a2a;
+    --text-muted: #7a6a4a;
+    --ok: #2e7d32;
+    --err: #c62828;
+}
+
 body {
-    background: #faf7f0;
-    color: #3a2e1a;
+    background: var(--bg-page);
+    color: var(--text);
     max-width: 50em;
     margin: 0 auto;
     padding: 2em;
@@ -18,11 +34,11 @@ li[data-equation] {
     max-width: 100%;
     padding: 2px 6px;
     margin-bottom: 4px;
-    border: 1px solid #e5dcc4;
+    border: 1px solid var(--border-soft);
     border-radius: 4px;
-    background: rgba(255, 255, 255, 0.4);
+    background: var(--bg-chip-soft);
 }
-li[data-equation]:hover { background: #f0e8d8; border-color: #c8b89a; }
+li[data-equation]:hover { background: var(--bg-chip); border-color: var(--border); }
 
 #preview { margin: 0.6em 0 1em; min-height: 80px; }
 #validity {
@@ -36,33 +52,33 @@ li[data-equation]:hover { background: #f0e8d8; border-color: #c8b89a; }
 #status details { display: inline; }
 #status details > summary {
     cursor: pointer; display: inline;
-    color: #5a4a2a;
+    color: var(--text-dim);
     text-decoration: underline;
     list-style: none;
 }
 #status details > summary::-webkit-details-marker { display: none; }
-#status details > summary:hover { color: #3a2e1a; }
+#status details > summary:hover { color: var(--text); }
 
 /* Inline clickable equations in descriptive text. */
 .eq-link {
     font-family: monospace;
-    color: #5a4a2a;
+    color: var(--text-dim);
     cursor: pointer;
-    border-bottom: 1px dashed #b8a778;
+    border-bottom: 1px dashed var(--border-strong);
 }
-.eq-link:hover { background: #f0e8d8; color: #3a2e1a; }
+.eq-link:hover { background: var(--bg-chip); color: var(--text); }
 
 /* Rules table — shared between index.html and puzzle.html. */
 table { border-collapse: collapse; margin-top: 0.5em; }
-th, td { border: 1px solid #c8b89a; padding: 0; text-align: center; vertical-align: middle; }
+th, td { border: 1px solid var(--border); padding: 0; text-align: center; vertical-align: middle; }
 tbody th, tbody td { line-height: 0; }
-thead th { background: #f0e8d8; padding: 4px 8px; line-height: normal; }
+thead th { background: var(--bg-chip); padding: 4px 8px; line-height: normal; }
 .char-cell { display: flex; flex-wrap: wrap; gap: 0; justify-content: center; align-items: center; }
 .empty-slot {
-  font-family: sans-serif; font-size: 0.8em; color: #7a6a4a;
+  font-family: sans-serif; font-size: 0.8em; color: var(--text-muted);
   padding: 0.15em 0.5em; line-height: normal;
-  border: 1px dashed #b8a778; border-radius: 4px;
-  background: #f5ecd6;
+  border: 1px dashed var(--border-strong); border-radius: 4px;
+  background: var(--bg-empty);
 }
 tbody svg { max-width: 100%; height: auto; }
 @media (max-width: 600px) {
@@ -72,8 +88,42 @@ tbody svg { max-width: 100%; height: auto; }
 /* The little "open in new tab" arrow appended to each sample link. */
 .sample-open {
     font-family: sans-serif; font-size: 0.85em;
-    color: #b8a778; text-decoration: none;
+    color: var(--border-strong); text-decoration: none;
     padding: 0 0.4em; margin-left: 0.3em;
     vertical-align: super;
 }
-.sample-open:hover { color: #5a4a2a; }
+.sample-open:hover { color: var(--text-dim); }
+
+/* Shared outlined-pill: buttons, picker links, journey-nav buttons, etc.
+   Caller picks the element (button/a/label); this class supplies the look. */
+.chip {
+    font-family: sans-serif; font-size: 1em;
+    padding: 0.3em 1em;
+    border: 1px solid var(--border); border-radius: 4px;
+    background: var(--bg-chip); color: var(--text-dim);
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+}
+.chip:hover:not(:disabled) { background: var(--bg-chip-hover); }
+.chip:disabled { opacity: 0.5; cursor: default; }
+.chip.active { border-color: var(--border-strong); font-weight: bold; }
+.chip[hidden] { display: none; }
+
+/* Softer variant used by the difficulty filter and sample picker. */
+.chip-soft {
+    font-family: sans-serif; font-size: 0.95em;
+    padding: 0.2em 0.7em;
+    border: 1px solid var(--border); border-radius: 4px;
+    background: var(--bg-chip-soft);
+    color: var(--text-dim);
+    cursor: pointer;
+    user-select: none;
+    text-decoration: none;
+    display: inline-block;
+}
+.chip-soft:hover { background: var(--bg-chip); }
+.chip-soft.active,
+.chip-soft:has(input:checked) {
+    background: var(--bg-chip); border-color: var(--border-strong);
+}
