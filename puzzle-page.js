@@ -1,16 +1,19 @@
 // Entry point for puzzle.html — renders a single puzzle from URL params.
 //
 // Params:
-//   puzzle   (required) URL-encoded equation string, e.g. "1%2B2%3D4"
-//   ruleset  (optional, default "default") one of strict | default | flexible
-//
-// Reserved for phase 2 (journey mode):
-//   puzzle-set   named puzzle set or comma-separated puzzles
-//   index        0-based position within the set
+//   puzzle       URL-encoded equation string, e.g. "1%2B2%3D4". Required
+//                unless `puzzle-set` is given, in which case the set's
+//                first puzzle is used.
+//   ruleset      one of strict | default | flexible. Default "default".
+//                Ignored when `puzzle-set` is given (the set entry's
+//                own ruleset is used instead).
+//   puzzle-set   id of a named set in puzzle-sets.js. Enables prev/next
+//                navigation within the set.
 
 import { getRuleSets, getRuleSet, renderRulesTable } from './match.js';
 import { injectDefs, equationSvg } from './matchstick-svg.js';
 import { findFirstSolution, wireSolveButton } from './animate.js';
+import { puzzleSets } from './puzzle-sets.js';
 
 const PREVIEW_H = 160;
 const ANIM_H = 110;
@@ -24,7 +27,32 @@ function showInvalid(msg) {
     document.getElementById('puzzle-area').hidden = true;
 }
 
-function validate(params) {
+/**
+ * Resolves the URL params into a normalised view of what to render.
+ * Returns `{ puzzle, rulesetName, set?, indexInSet? }` or `{ error }`.
+ *
+ * Set-mode: if `puzzle-set` is given, the set's entry-defined ruleset
+ * is authoritative. If `puzzle` is omitted, the first entry is used.
+ */
+function resolve(params) {
+    const setId = params.get('puzzle-set');
+    if (setId) {
+        const set = puzzleSets.find(s => s.id === setId);
+        if (!set) return { error: `Unknown puzzle set <code>${setId}</code>.` };
+        if (!set.puzzles?.length) return { error: `Puzzle set <code>${setId}</code> is empty.` };
+
+        const puzzleParam = params.get('puzzle');
+        let indexInSet = 0;
+        if (puzzleParam) {
+            indexInSet = set.puzzles.findIndex(p => p.puzzle === puzzleParam);
+            if (indexInSet < 0) {
+                return { error: `Puzzle <code>${puzzleParam}</code> is not part of <em>${set.name}</em>.` };
+            }
+        }
+        const entry = set.puzzles[indexInSet];
+        return { puzzle: entry.puzzle, rulesetName: entry.ruleset, set, indexInSet };
+    }
+
     const puzzle = params.get('puzzle');
     if (!puzzle) return { error: 'No puzzle given.' };
     if (!LEGAL_INPUT_RE.test(puzzle)) {
@@ -38,21 +66,49 @@ function validate(params) {
     return { puzzle, rulesetName };
 }
 
+function puzzleHrefInSet(set, index) {
+    const p = new URLSearchParams({ puzzle: set.puzzles[index].puzzle, 'puzzle-set': set.id });
+    return `puzzle.html?${p}`;
+}
+
+function setupJourneyNav(set, indexInSet) {
+    const nav = document.getElementById('journey-nav');
+    const prev = document.getElementById('prev-btn');
+    const next = document.getElementById('next-btn');
+    const pos  = document.getElementById('journey-pos');
+
+    nav.hidden = false;
+    pos.textContent = `${indexInSet + 1} / ${set.puzzles.length}`;
+
+    if (indexInSet > 0) prev.onclick = () => { window.location.href = puzzleHrefInSet(set, indexInSet - 1); };
+    else                prev.disabled = true;
+
+    if (indexInSet < set.puzzles.length - 1) next.onclick = () => { window.location.href = puzzleHrefInSet(set, indexInSet + 1); };
+    else                                     next.disabled = true;
+}
+
 function setup() {
     injectDefs(document.body);
 
     const params = new URLSearchParams(window.location.search);
-    const v = validate(params);
-    if (v.error) {
-        showInvalid(v.error);
+    const r = resolve(params);
+    if (r.error) {
+        showInvalid(r.error);
         return;
     }
 
-    const { puzzle, rulesetName } = v;
+    const { puzzle, rulesetName, set, indexInSet } = r;
     const ruleset = getRuleSet(rulesetName);
     document.title = `${puzzle} — Matchstick puzzle`;
-    document.getElementById('title').textContent =
-        `Puzzle: ${puzzle}${rulesetName === 'default' ? '' : ` (${rulesetName})`}`;
+
+    const titleEl = document.getElementById('title');
+    if (set) {
+        titleEl.innerHTML = `<small style="display:block; color:#7a6a4a; font-size:0.7em; margin-bottom:0.1em;">`
+            + `${set.name}</small>Puzzle: ${puzzle}`;
+    } else {
+        titleEl.textContent =
+            `Puzzle: ${puzzle}${rulesetName === 'default' ? '' : ` (${rulesetName})`}`;
+    }
 
     document.getElementById('puzzle-area').hidden = false;
 
@@ -80,28 +136,29 @@ function setup() {
         heading.hidden = true;
         animArea.hidden = true;
         btn.hidden = true;
-        return;
+    } else {
+        const solution = findFirstSolution(puzzle, ruleset);
+        if (!solution) {
+            status.innerHTML = `<p style="font-family: sans-serif; color: #7a6a4a;">`
+                + `No single-stick solution under the <strong>${rulesetName}</strong> ruleset. `
+                + `Try a more permissive ruleset on the <a href="index.html">solver page</a>.</p>`;
+            heading.hidden = true;
+            animArea.hidden = true;
+            btn.hidden = true;
+        } else {
+            const anim = wireSolveButton({
+                button: btn,
+                animArea,
+                h: ANIM_H,
+                solveLabel: 'Show me!',
+                resetLabel: 'Reset',
+            });
+            anim.setPuzzle(puzzle, ruleset);
+        }
     }
 
-    const solution = findFirstSolution(puzzle, ruleset);
-    if (!solution) {
-        status.innerHTML = `<p style="font-family: sans-serif; color: #7a6a4a;">`
-            + `No single-stick solution under the <strong>${rulesetName}</strong> ruleset. `
-            + `Try a more permissive ruleset on the <a href="index.html">solver page</a>.</p>`;
-        heading.hidden = true;
-        animArea.hidden = true;
-        btn.hidden = true;
-        return;
-    }
-
-    const anim = wireSolveButton({
-        button: btn,
-        animArea,
-        h: ANIM_H,
-        solveLabel: 'Show me!',
-        resetLabel: 'Reset',
-    });
-    anim.setPuzzle(puzzle, ruleset);
+    // Set-mode wires up prev/next at the bottom.
+    if (set) setupJourneyNav(set, indexInSet);
 }
 
 setup();
