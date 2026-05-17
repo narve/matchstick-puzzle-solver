@@ -12,7 +12,8 @@
 
 import { getRuleSets, getRuleSet, renderRulesTable } from './match.js';
 import { injectDefs, equationSvg } from './matchstick-svg.js';
-import { findFirstSolution, wireSolveButton } from './animate.js';
+import { findFirstSolution, animateSolve } from './animate.js';
+import { equationAnimatableSvg } from './matchstick-svg.js';
 import { puzzleSets } from './puzzle-sets.js';
 
 const PREVIEW_H = 160;
@@ -121,44 +122,64 @@ function setup() {
     document.getElementById('rules-toggle').hidden = false;
 
     // Decide what to show below the puzzle. Three cases:
-    //   - already-true equation: brief note, no Show-me UI.
-    //   - solvable: Show-me UI, no extra text (the animation IS the answer).
-    //   - unsolvable under this ruleset: brief note, hide Show-me UI.
+    //   - already-true equation: brief note, no reveal button.
+    //   - solvable: reveal button → animate on click → hide on second click.
+    //   - unsolvable under this ruleset: brief note, hide reveal button.
     const isOK = ruleset.evaluate(puzzle.split(''));
     const status = document.getElementById('status');
-    const heading = document.getElementById('solve-heading');
     const animArea = document.getElementById('anim-area');
     const btn = document.getElementById('solve-btn');
 
     if (isOK) {
         status.innerHTML = `<p style="font-family: sans-serif; color: #2e7d32;">`
             + `This equation is already true — no single-stick move needed.</p>`;
-        heading.hidden = true;
         animArea.hidden = true;
         btn.hidden = true;
     } else {
-        const solution = findFirstSolution(puzzle, ruleset);
-        if (!solution) {
+        const paddedSolution = findFirstSolution(puzzle, ruleset);
+        if (!paddedSolution) {
             status.innerHTML = `<p style="font-family: sans-serif; color: #7a6a4a;">`
                 + `No single-stick solution under the <strong>${rulesetName}</strong> ruleset. `
                 + `Try a more permissive ruleset on the <a href="index.html">solver page</a>.</p>`;
-            heading.hidden = true;
             animArea.hidden = true;
             btn.hidden = true;
         } else {
-            const anim = wireSolveButton({
-                button: btn,
-                animArea,
-                h: ANIM_H,
-                solveLabel: 'Show me!',
-                resetLabel: 'Reset',
-            });
-            anim.setPuzzle(puzzle, ruleset);
+            wireRevealToggle(btn, animArea, puzzle, paddedSolution);
         }
     }
 
     // Set-mode wires up prev/next at the bottom.
     if (set) setupJourneyNav(set, indexInSet);
+}
+
+/**
+ * Two-state reveal: button toggles between hidden anim area + "Reveal
+ * the solution" label, and visible anim area + "Hide solution" label.
+ * The animation plays on each reveal.
+ */
+function wireRevealToggle(btn, animArea, puzzle, paddedSolution) {
+    const paddedPuzzle = ' ' + puzzle + ' ';
+    let revealed = false;
+    btn.textContent = 'Reveal the solution';
+    animArea.hidden = true;
+
+    btn.addEventListener('click', async () => {
+        if (revealed) {
+            animArea.hidden = true;
+            animArea.innerHTML = '';
+            btn.textContent = 'Reveal the solution';
+            revealed = false;
+            return;
+        }
+        animArea.hidden = false;
+        animArea.innerHTML = equationAnimatableSvg(paddedPuzzle, ANIM_H);
+        btn.textContent = 'Hide solution';
+        revealed = true;
+        const svg = animArea.querySelector('svg.equation-anim');
+        btn.disabled = true;
+        await animateSolve(svg, paddedPuzzle, paddedSolution);
+        btn.disabled = false;
+    });
 }
 
 setup();

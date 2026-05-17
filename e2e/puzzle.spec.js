@@ -5,23 +5,27 @@ import { test, expect } from '@playwright/test';
 test.describe('puzzle.html', () => {
 
   test.describe('single-puzzle mode', () => {
-    test('renders the puzzle and a working Show-me button', async ({ page }) => {
+    test('renders the puzzle and a Reveal button (no second puzzle yet)', async ({ page }) => {
       await page.goto('/puzzle.html?puzzle=6%2B4%3D4');
       await expect(page).toHaveTitle('6+4=4 — Matchstick puzzle');
       await expect(page.locator('#title')).toHaveText('Puzzle: 6+4=4');
-      // Big preview SVG renders (6+4=4 has 5 chars; 2+5+5 = 16 char-symbols
-      // but spaces/diagonals can vary — just assert at least one <use>).
       await expect(page.locator('#preview svg').first()).toBeVisible();
-      // Show-me wires up the addressable-stick SVG.
-      await expect(page.locator('#solve-btn')).toHaveText('Show me!');
-      await expect(page.locator('#anim-area svg.equation-anim')).toBeVisible();
+      await expect(page.locator('#solve-btn')).toHaveText('Reveal the solution');
+      // Anim area starts hidden — no duplicate of the puzzle on first paint.
+      await expect(page.locator('#anim-area')).toBeHidden();
+      await expect(page.locator('#anim-area svg.equation-anim')).toHaveCount(0);
     });
 
-    test('clicking Show me animates and switches the button to Reset', async ({ page }) => {
+    test('Reveal shows the animation, button toggles to Hide and back', async ({ page }) => {
       await page.goto('/puzzle.html?puzzle=6%2B4%3D4');
       await page.locator('#solve-btn').click();
-      // The animation runs ~2.4s; wait for the label to flip.
-      await expect(page.locator('#solve-btn')).toHaveText('Reset', { timeout: 5000 });
+      // Anim area appears, button flips label immediately.
+      await expect(page.locator('#anim-area svg.equation-anim')).toBeVisible();
+      await expect(page.locator('#solve-btn')).toHaveText('Hide solution');
+      // Click Hide — anim area disappears, label reverts.
+      await page.locator('#solve-btn').click();
+      await expect(page.locator('#anim-area')).toBeHidden();
+      await expect(page.locator('#solve-btn')).toHaveText('Reveal the solution');
     });
 
     test('valid (true) equations show a "already true" note, no Show-me', async ({ page }) => {
