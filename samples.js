@@ -175,6 +175,12 @@ export const samples = [
     difficulty: "medium",
     ruleset: "flexible",
   },
+  {
+    puzzle: "-5+3=2",
+    solutions: ["+5-3=2"],
+    difficulty: "medium",
+    ruleset: "flexible",
+  },
 
   {
     puzzle: "1+1+4=5",
