@@ -1,74 +1,95 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Matchstick</title>
-  <link rel="icon" type="image/svg+xml" href="favicon.svg">
-  <link rel="stylesheet" href="styles.css">
-  <style>
-    body { font-family: Georgia, serif; }
-    .matchstick {
-      display: inline-block;
-      vertical-align: middle;
-      margin: 0 4px;
-      filter: drop-shadow(1px 2px 2px rgba(0, 0, 0, 0.45));
-    }
-    #sample-picker {
-      display: flex; flex-wrap: wrap; gap: 0.4em 0.8em;
-      font-family: sans-serif; font-size: 0.9em;
-      margin: 0.4em 0 0.8em;
-    }
-    #anim-area { margin-top: 40px; }
-    #anim-area svg.equation-anim { overflow: visible; }
-    #solve-btn { margin-top: 0.5em; padding: 0.3em 1.2em; }
-  </style>
+    <meta charset="UTF-8">
+    <title>Matchstick</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="stylesheet" href="styles.css">
+
+    <!-- Basic visitor tracking - privacy-friendly, GDPR-compliant, European -->
+    <script data-goatcounter="https://dv8.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+
+    <style>
+        body {
+            font-family: Georgia, serif;
+        }
+
+        .matchstick {
+            display: inline-block;
+            vertical-align: middle;
+            margin: 0 4px;
+            filter: drop-shadow(1px 2px 2px rgba(0, 0, 0, 0.45));
+        }
+
+        #sample-picker {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4em 0.8em;
+            font-family: sans-serif;
+            font-size: 0.9em;
+            margin: 0.4em 0 0.8em;
+        }
+
+        #anim-area {
+            margin-top: 40px;
+        }
+
+        #anim-area svg.equation-anim {
+            overflow: visible;
+        }
+
+        #solve-btn {
+            margin-top: 0.5em;
+            padding: 0.3em 1.2em;
+        }
+    </style>
 </head>
 <body>
 
-  <h2>The character set</h2>
-  <p>Every digit and operator, built from matchsticks:</p>
+<h2>The character set</h2>
+<p>Every digit and operator, built from matchsticks:</p>
 
-  <div id="char-showcase" class="char-cell"></div>
+<div id="char-showcase" class="char-cell"></div>
 
-  <h2>Longest sample puzzle</h2>
-  <p>Puzzle:</p>
-  <div id="longest-puzzle"></div>
-  <p>Solution:</p>
-  <div id="longest-solution"></div>
+<h2>Longest sample puzzle</h2>
+<p>Puzzle:</p>
+<div id="longest-puzzle"></div>
+<p>Solution:</p>
+<div id="longest-solution"></div>
 
-  <h2>Animation experiment</h2>
-  <p>Pick a sample below, then click "Solve" to animate the moving stick
-     from its original position to the first listed solution
-     (lift → travel → place).</p>
-  <div id="sample-picker"></div>
-  <div id="anim-area"></div>
-  <button id="solve-btn" class="chip" type="button">Solve</button>
+<h2>Animation experiment</h2>
+<p>Pick a sample below, then click "Solve" to animate the moving stick
+    from its original position to the first listed solution
+    (lift → travel → place).</p>
+<div id="sample-picker"></div>
+<div id="anim-area"></div>
+<button id="solve-btn" class="chip" type="button">Solve</button>
 
-  <h2>Character mutations</h2>
-  <p>What each character can become when one matchstick is moved, added, or removed.</p>
+<h2>Character mutations</h2>
+<p>What each character can become when one matchstick is moved, added, or removed.</p>
 
-  <div id="rules-table"></div>
+<div id="rules-table"></div>
 
-  <script type="module">
-    import { getRuleSet } from './src/match.js';
-    import { renderRulesTable } from './src/render.js';
-    import { injectDefs, charSvg, equationSvg, VB_H } from './src/matchstick-svg.js';
-    import { wireSolveButton } from './src/animate.js';
-    import { samples } from './src/samples.js';
+<script type="module">
+    import {getRuleSet} from './src/match.js';
+    import {renderRulesTable} from './src/render.js';
+    import {injectDefs, charSvg, equationSvg, VB_H} from './src/matchstick-svg.js';
+    import {wireSolveButton} from './src/animate.js';
+    import {samples} from './src/samples.js';
 
     const ruleset = getRuleSet("default");
     injectDefs(document.body);
 
     document.getElementById('char-showcase').innerHTML =
-      ruleset.legals.filter(c => c !== ' ').map(c =>
-        charSvg(c, 96, 248) + (c === '7' ? '<div style="flex-basis:100%;height:0"></div>' : '')
-      ).join('');
+        ruleset.legals.filter(c => c !== ' ').map(c =>
+            charSvg(c, 96, 248) + (c === '7' ? '<div style="flex-basis:100%;height:0"></div>' : '')
+        ).join('');
 
     const longest = samples.reduce((a, b) => b.puzzle.length > a.puzzle.length ? b : a);
     const EQ_H = 80;
     document.getElementById('longest-puzzle').innerHTML = equationSvg(longest.puzzle, EQ_H);
     document.getElementById('longest-solution').innerHTML =
-      longest.solutions.map(s => equationSvg(s, EQ_H)).join('<br>');
+        longest.solutions.map(s => equationSvg(s, EQ_H)).join('<br>');
 
     const CHAR_SCALE = 1.1;
     const CH = Math.round(VB_H * CHAR_SCALE);
@@ -96,7 +117,7 @@
         if (s === longest) initialLink = a;
     });
     selectSample(longest, initialLink);
-  </script>
+</script>
 
 </body>
 </html>
